@@ -30,7 +30,8 @@ function getHeaders() {
 // ─── Low-level helpers ────────────────────────────────────────────────────────
 
 async function get<T = any>(path: string, params?: Record<string, any>): Promise<T> {
-  const url = new URL(getUrl(path))
+  const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+  const url = new URL(getUrl(path), base)
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null) url.searchParams.set(k, String(v))
