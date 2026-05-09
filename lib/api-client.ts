@@ -7,7 +7,7 @@
  * ---------------------------------------------------------------------------
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "")
+const BASE_URL = "/api/proxy"
 
 function getUrl(path: string) {
   const cleanPath = path.startsWith("/") ? path : `/${path}`
