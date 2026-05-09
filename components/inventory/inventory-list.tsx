@@ -58,7 +58,8 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
         (item) =>
           item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.barcode.includes(searchTerm),
+          item.barcode.includes(searchTerm) ||
+          item.serial_numbers?.some(sn => sn.serial_code.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
 
@@ -122,7 +123,7 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, SKU, or barcode..."
+            placeholder="Search by name, SKU, barcode, or serial..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -193,14 +194,23 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
               <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
                 <p className="text-xs font-semibold text-primary mb-1">Serial Numbers: {item.serial_numbers.length}</p>
                 <div className="flex flex-wrap gap-1">
-                  {item.serial_numbers.slice(0, 3).map((sn) => (
-                    <Badge key={sn.id} variant="outline" className="text-xs font-mono">
+                  {item.serial_numbers.slice(0, 5).map((sn) => (
+                    <Badge 
+                      key={sn.id} 
+                      variant="outline" 
+                      className={`text-[10px] font-mono ${
+                        sn.status === 'Available' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
+                        sn.status === 'Damaged' ? 'border-rose-200 text-rose-700 bg-rose-50' :
+                        'border-slate-200 text-slate-500 bg-slate-50'
+                      }`}
+                    >
                       {sn.serial_code}
+                      <span className="ml-1 text-[8px] opacity-70">({sn.status})</span>
                     </Badge>
                   ))}
-                  {item.serial_numbers.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{item.serial_numbers.length - 3} more
+                  {item.serial_numbers.length > 5 && (
+                    <Badge variant="outline" className="text-[10px] bg-white border-slate-200">
+                      +{item.serial_numbers.length - 5} others
                     </Badge>
                   )}
                 </div>
