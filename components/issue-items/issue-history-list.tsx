@@ -253,146 +253,146 @@ export function IssueHistoryList() {
   }
 
   return (
-    <div className='space-y-4'>
-      {/* Filters */}
-      <Card className='p-4 bg-blue-50 border-blue-200'>
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-          <div className='space-y-2'>
-            <Label className='text-primary text-sm'>Search by Name, Number or Phone</Label>
-            <div className='relative'>
-              <Search className='absolute left-3 top-2.5 w-4 h-4 text-muted-foreground' />
-              <Input
-                placeholder='Search...'
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className='pl-10 border-blue-200 focus:ring-primary'
-              />
-            </div>
+    <div className="space-y-4">
+      {/* Streamlined Search & Filters */}
+      <Card className="p-4 border-slate-200 shadow-sm rounded-2xl bg-white">
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+            <Input
+              placeholder="Filter by customer, issue ID, or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus:bg-white transition-all rounded-xl text-sm"
+            />
           </div>
-          <div className='space-y-2'>
-            <Label className='text-primary text-sm'>Status Filter</Label>
+          <div className="flex items-center gap-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className='w-full border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary'
+              className="h-10 border border-slate-200 rounded-xl px-4 text-sm font-semibold text-slate-600 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer hover:border-slate-300"
             >
-              <option value='All'>All Issues</option>
-              <option value='Pending'>Pending</option>
-              <option value='Overdue'>Overdue</option>
-              <option value='Returned'>Returned</option>
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Overdue">Overdue</option>
+              <option value="Returned">Returned</option>
             </select>
-          </div>
-          <div className='space-y-2'>
-            <Label className='text-primary text-sm'>Summary</Label>
-            <div className='text-sm font-semibold text-primary pt-2'>
-              Total: {filteredIssues.length} | Pending: {filteredIssues.filter((i) => i.status === 'Pending').length}
+            <div className="h-10 px-4 flex items-center bg-slate-900 rounded-xl border border-slate-800 shadow-inner">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-3">Active Logs</span>
+              <span className="text-sm font-black text-white">{filteredIssues.length}</span>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Issues List */}
-      <div className='space-y-3'>
+      {/* Modern Issue List */}
+      <div className="space-y-3">
         {filteredIssues.length === 0 ? (
-          <Card className='p-8 text-center'>
-            <p className='text-muted-foreground'>No issues found</p>
-          </Card>
+          <div className="p-12 bg-white rounded-3xl border border-dashed border-slate-200 text-center">
+            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Search className="w-6 h-6 text-slate-300" />
+            </div>
+            <p className="text-slate-500 font-medium text-sm">No records match your criteria</p>
+          </div>
         ) : (
           filteredIssues.map((issue) => (
-            <Card
+            <div
               key={issue.id}
-              className='overflow-hidden hover:shadow-md transition-shadow'
+              className={`group bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${
+                expandedId === issue.id 
+                  ? "border-primary/30 shadow-xl shadow-primary/5 ring-1 ring-primary/5" 
+                  : "border-slate-100 hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/40"
+              }`}
             >
-              {/* Main Row */}
-              <div className='p-4 bg-gradient-to-r from-white to-blue-50 border-b border-blue-100'>
-                <div className='flex items-center justify-between gap-4'>
-                  <div className='flex items-center gap-4 flex-1'>
-                    <button
-                      onClick={() => handlePrintReceipt(issue)}
-                      className='text-primary hover:bg-blue-100 p-1 rounded'
-                      title='Print Receipt'
-                    >
-                      <FileText className='w-5 h-5' />
-                    </button>
-                    <button
-                      onClick={() => toggleExpand(issue.id)}
-                      className='text-primary hover:bg-blue-100 p-1 rounded'
-                    >
-                      <ChevronDown
-                        className={`w-5 h-5 transition-transform ${
-                          expandedId === issue.id ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-                    <div className='flex-1'>
-                      <p className='font-semibold text-primary'>
-                        Issue #{issue.issueNumber} - {issue.customer.name}
-                      </p>
-                      <p className='text-sm text-muted-foreground'>
-                        {issue.customer.phone && `Contact: ${issue.customer.phone}`}
-                      </p>
+              {/* Card Header Row */}
+              <div 
+                className={`p-4 cursor-pointer transition-colors ${expandedId === issue.id ? 'bg-primary/[0.02]' : ''}`}
+                onClick={() => toggleExpand(issue.id)}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                      expandedId === issue.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary'
+                    }`}>
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-primary uppercase tracking-widest">{issue.issueNumber}</span>
+                        <div className="w-1 h-1 rounded-full bg-slate-300" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(issue.issueDate).toLocaleDateString()}</span>
+                      </div>
+                      <p className="font-bold text-slate-900 mt-0.5">{issue.customer.name}</p>
                     </div>
                   </div>
 
-                  <div className='flex items-center gap-3'>
-                    <div className='text-right'>
-                      <p className='text-sm font-semibold text-primary'>
-                        ${issue.totalAmount.toFixed(2)}
-                      </p>
-                      <p className='text-xs text-muted-foreground'>
-                        {new Date(issue.issueDate).toLocaleDateString()}
-                      </p>
+                  <div className="flex items-center gap-6">
+                    <div className="hidden md:block text-right">
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Total Value</div>
+                      <div className="text-sm font-black text-slate-900">LKR {issue.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </div>
-                    <Badge className={`${getStatusColor(issue.status || 'Pending')} flex items-center gap-1`}>
-                      {getStatusIcon(issue.status || 'Pending')}
-                      {issue.status || 'Pending'}
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                      <div className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${
+                        issue.status === 'Returned' 
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                          : issue.status === 'Overdue' 
+                            ? "bg-rose-50 text-rose-600 border-rose-100" 
+                            : "bg-amber-50 text-amber-600 border-amber-100"
+                      }`}>
+                        {getStatusIcon(issue.status || 'Pending')}
+                        {issue.status}
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-slate-300 transition-transform duration-300 ${expandedId === issue.id ? 'rotate-180 text-primary' : ''}`} />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Expanded Details */}
+              {/* Detail Panel */}
               {expandedId === issue.id && (
-                <div className='p-4 space-y-4 bg-white'>
-                  {/* Dates Section */}
-                  <div className='grid grid-cols-3 gap-4 pb-4 border-b border-blue-100'>
-                    <div>
-                      <p className='text-xs text-muted-foreground font-semibold'>Issue Date</p>
-                      <p className='font-semibold text-primary'>
-                        {new Date(issue.issueDate).toLocaleDateString()}
-                      </p>
+                <div className="px-6 pb-6 pt-2 space-y-6 border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Contact</div>
+                      <div className="text-xs font-bold text-slate-700">{issue.customer.phone || 'N/A'}</div>
                     </div>
-                    <div>
-                      <p className='text-xs text-muted-foreground font-semibold'>Return Date</p>
-                      <p className='font-semibold text-primary'>
-                        {new Date(issue.returnDate).toLocaleDateString()}
-                      </p>
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Return Date</div>
+                      <div className="text-xs font-bold text-slate-700">{new Date(issue.returnDate).toLocaleDateString()}</div>
                     </div>
-                    <div>
-                      <p className='text-xs text-muted-foreground font-semibold'>Days</p>
-                      <p className='font-semibold text-primary'>{issue.numberOfDays} day(s)</p>
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Log Duration</div>
+                      <div className="text-xs font-bold text-slate-700">{issue.numberOfDays} {issue.numberOfDays === 1 ? 'Day' : 'Days'}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Created At</div>
+                      <div className="text-xs font-bold text-slate-700">{new Date(issue.issuedDate).toLocaleString()}</div>
                     </div>
                   </div>
 
-                  {/* Items Section */}
-                  <div>
-                    <p className='text-sm font-semibold text-primary mb-2'>Issued Items:</p>
-                    <div className='space-y-2'>
+                  {/* Items List */}
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Equipment Details</h4>
+                    <div className="grid grid-cols-1 gap-2">
                       {issue.items.map((item, idx) => (
-                        <div key={idx} className='p-2 bg-blue-50 rounded border border-blue-200'>
-                          <div className='flex justify-between items-start'>
+                        <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl hover:border-primary/20 transition-all group/item">
+                          <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-400 group-hover/item:bg-primary/10 group-hover/item:text-primary transition-colors">
+                              {idx + 1}
+                            </div>
                             <div>
-                              <p className='font-semibold text-sm'>{item.name}</p>
-                              <p className='text-xs text-muted-foreground'>Qty: {item.quantity}</p>
-                              {item.serialNumbers && item.serialNumbers.length > 0 && (
-                                <div className='flex flex-wrap gap-1 mt-1'>
-                                  {item.serialNumbers.map((sn) => (
-                                    <Badge key={sn} variant='outline' className='text-xs font-mono'>
-                                      {sn}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
+                              <div className="text-sm font-bold text-slate-800">{item.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Quantity: {item.quantity}</span>
+                                {item.serialNumbers && item.serialNumbers.length > 0 && (
+                                  <div className="flex gap-1">
+                                    {item.serialNumbers.map((sn) => (
+                                      <span key={sn} className="text-[9px] font-mono font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase">{sn}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -400,46 +400,58 @@ export function IssueHistoryList() {
                     </div>
                   </div>
 
-                  <div className='flex items-center justify-between pt-2 border-t border-blue-100 gap-4'>
-                    <div className='flex gap-4'>
-                      <div>
-                        <p className='text-sm font-semibold text-primary'>Payment Status:</p>
-                        <Badge className={issue.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}>
-                          {issue.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                        </Badge>
-                      </div>
-                      <div>
-                        <p className='text-sm font-semibold text-primary'>Issue Status:</p>
-                        <Badge className={getStatusColor(issue.status || 'Pending')}>
-                          {issue.status || 'Pending'}
-                        </Badge>
+                  {/* Footer Actions */}
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-4">
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Financial Status</div>
+                        <div className={`text-xs font-black uppercase tracking-tighter ${issue.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                          {issue.paymentStatus === 'paid' ? '✓ Fully Settled' : '⚠ Outstanding Payment'}
+                        </div>
                       </div>
                     </div>
 
-                    <div className='flex gap-2'>
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePrintReceipt(issue)
+                        }}
+                        variant="outline"
+                        className="flex-1 md:flex-none border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-[11px] uppercase tracking-wider h-10 rounded-xl"
+                      >
+                        <FileText className="w-3.5 h-3.5 mr-2" />
+                        Reprint
+                      </Button>
+
                       {issue.paymentStatus === 'unpaid' && (
                         <Button
-                          onClick={() => handleMarkAsPaid(issue.id)}
-                          variant="outline"
-                          className='border-green-600 text-green-600 hover:bg-green-50'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMarkAsPaid(issue.id)
+                          }}
+                          className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] uppercase tracking-wider h-10 rounded-xl shadow-lg shadow-emerald-500/10"
                         >
-                          Mark as Paid
+                          Mark Paid
                         </Button>
                       )}
                       
                       {(issue.status === 'Pending' || issue.status === 'Overdue') && (
                         <Button
-                          onClick={() => handleMarkAsReturned(issue.id)}
-                          className='bg-green-600 hover:bg-green-700'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMarkAsReturned(issue.id)
+                          }}
+                          className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white font-bold text-[11px] uppercase tracking-wider h-10 rounded-xl shadow-lg shadow-primary/20"
                         >
-                          Mark as Returned
+                          Complete Return
                         </Button>
                       )}
                     </div>
                   </div>
                 </div>
               )}
-            </Card>
+            </div>
           ))
         )}
       </div>

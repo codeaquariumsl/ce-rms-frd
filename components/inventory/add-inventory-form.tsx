@@ -144,7 +144,7 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="rental_rate_per_day">Daily Rate ($) *</Label>
+            <Label htmlFor="rental_rate_per_day">Daily Rate (LKR) *</Label>
             <Input
               id="rental_rate_per_day"
               name="rental_rate_per_day"
@@ -158,7 +158,7 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="rental_rate_per_week">Weekly Rate ($)</Label>
+            <Label htmlFor="rental_rate_per_week">Weekly Rate (LKR)</Label>
             <Input
               id="rental_rate_per_week"
               name="rental_rate_per_week"
@@ -171,7 +171,7 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="rental_rate_per_month">Monthly Rate ($)</Label>
+            <Label htmlFor="rental_rate_per_month">Monthly Rate (LKR)</Label>
             <Input
               id="rental_rate_per_month"
               name="rental_rate_per_month"

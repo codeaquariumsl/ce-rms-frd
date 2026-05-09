@@ -210,18 +210,18 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Rate/Day:</span>
-                <span className="font-medium">${item.rental_rate_per_day}</span>
+                <span className="font-medium">{item.rental_rate_per_day}</span>
               </div>
               {item.rental_rate_per_week && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Rate/Week:</span>
-                  <span className="font-medium">${item.rental_rate_per_week}</span>
+                  <span className="font-medium">{item.rental_rate_per_week}</span>
                 </div>
               )}
               {item.rental_rate_per_month && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Rate/Month:</span>
-                  <span className="font-medium">${item.rental_rate_per_month}</span>
+                  <span className="font-medium">{item.rental_rate_per_month}</span>
                 </div>
               )}
             </div>

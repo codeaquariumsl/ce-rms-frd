@@ -6,26 +6,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function IssueItemsPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary">Issue Items</h1>
-          <p className="text-muted-foreground mt-2">
-            Issue items to customers without booking - Generate official receipt with signature
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="w-full mx-auto p-2 md:p-6 space-y-2">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Issue Management</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Streamlined direct-to-customer equipment issuance and tracking.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-100">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Live System</span>
+          </div>
+        </header>
 
-        <Tabs defaultValue="create" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="create">Create Issue</TabsTrigger>
-            <TabsTrigger value="history">Issue History</TabsTrigger>
+        <Tabs defaultValue="create" className="w-full space-y-4">
+          <TabsList className="bg-white p-1 rounded-xl border border-slate-200 shadow-sm inline-flex">
+            <TabsTrigger
+              value="create"
+              className="px-6 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-200"
+            >
+              Direct Issue
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="px-6 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-200"
+            >
+              Issue Logs
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="create" className="mt-4">
+          <TabsContent value="create" className="focus-visible:outline-none">
             <CreateIssueForm />
           </TabsContent>
 
-          <TabsContent value="history" className="mt-4">
+          <TabsContent value="history" className="focus-visible:outline-none">
             <IssueHistoryList />
           </TabsContent>
         </Tabs>

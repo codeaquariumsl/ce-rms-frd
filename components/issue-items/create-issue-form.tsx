@@ -282,9 +282,9 @@ export function CreateIssueForm() {
       }
 
       await generateIssuePDF(receiptData)
-      
+
       alert("Issue processed successfully! Receipt is downloading...")
-      
+
       // Reset form
       setSelectedItems([])
       setSelectedCustomerId("")
@@ -296,154 +296,227 @@ export function CreateIssueForm() {
 
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Date Information */}
-        <Card className="p-6 bg-blue-50 border-blue-100">
-          <h3 className="font-semibold text-primary mb-4">Issue Details</h3>
-          <div className="space-y-4">
-            <div className="p-3 bg-white rounded border border-blue-200">
-              <p className="text-xs text-blue-600 font-semibold mb-2">ℹ️ Edit any date field - the other will update automatically</p>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="issue-date" className="text-primary">Issue Date *</Label>
-                <Input
-                  id="issue-date"
-                  type="date"
-                  value={issueDate}
-                  onChange={(e) => handleIssueeDateChange(e.target.value)}
-                  className="border-blue-200 focus:ring-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="days" className="text-primary">Number of Days *</Label>
-                <Input
-                  id="days"
-                  type="number"
-                  min="1"
-                  value={numberOfDays}
-                  onChange={(e) => handleNumberOfDaysChange(parseInt(e.target.value) || 1)}
-                  className="border-blue-200 focus:ring-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="return-date" className="text-primary">Return Date *</Label>
-                <Input
-                  id="return-date"
-                  type="date"
-                  value={returnDate}
-                  onChange={(e) => handleReturnDateChange(e.target.value)}
-                  className="border-blue-200 focus:ring-primary"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
+    <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-4 space-y-2">
+          {/* Metadata: Date & Customer */}
+          <Card className="p-5 border-slate-200 shadow-sm rounded-2xl bg-white space-y-2">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-primary rounded-full" />
+                Issue Parameters
+              </h3>
 
-        {/* Customer Selection */}
-        <Card className="p-6 bg-blue-50 border-blue-100">
-          <h3 className="font-semibold text-primary mb-4">Select Customer</h3>
-          <div className="space-y-2">
-            <Label htmlFor="customer" className="text-primary">Customer *</Label>
-            <select
-              id="customer"
-              value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value)}
-              className="w-full border border-blue-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Select a customer</option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </Card>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="issue-date" className="text-xs font-medium text-slate-500 uppercase">Issue Date</Label>
+                    <Input
+                      id="issue-date"
+                      type="date"
+                      value={issueDate}
+                      onChange={(e) => handleIssueeDateChange(e.target.value)}
+                      className="h-9 text-sm border-slate-200 focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="days" className="text-xs font-medium text-slate-500 uppercase">Duration (Days)</Label>
+                    <Input
+                      id="days"
+                      type="number"
+                      min="1"
+                      value={numberOfDays}
+                      onChange={(e) => handleNumberOfDaysChange(parseInt(e.target.value) || 1)}
+                      className="h-9 text-sm border-slate-200 focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
 
-        {/* Items Selection */}
-        <Card className="p-6 bg-blue-50 border-blue-100">
-          <h3 className="font-semibold text-primary mb-4">Select Items</h3>
-          {selectedCustomerId && (
-            <div className="mb-6">
-              <Label className="text-primary mb-3 block">Available Items *</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto">
-                {inventory.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleAddItem(item.id as string)}
-                    disabled={!selectedCustomerId}
-                    className="text-left p-3 border border-blue-200 rounded hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                <div className="space-y-1.5">
+                  <Label htmlFor="return-date" className="text-xs font-medium text-slate-500 uppercase">Estimated Return</Label>
+                  <Input
+                    id="return-date"
+                    type="date"
+                    value={returnDate}
+                    onChange={(e) => handleReturnDateChange(e.target.value)}
+                    className="h-9 text-sm border-slate-200 focus:border-primary transition-colors"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <Label htmlFor="customer" className="text-xs font-medium text-slate-500 uppercase mb-2 block">Select Customer</Label>
+                  <select
+                    id="customer"
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-slate-50/50"
                   >
-                    <div className="font-medium text-primary">{item.name}</div>
-                    <div className="text-sm text-muted-foreground">{item.category}</div>
-                    <div className="text-xs text-blue-600">Available: {item.quantity_available}</div>
-                  </button>
-                ))}
+                    <option value="">Select a customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Selected Items Table */}
-          {selectedItems.length > 0 && (
-            <div className="mt-6">
-              <h4 className="font-semibold text-primary mb-3">Selected Items</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+            <div className="pt-2 border-t border-slate-100">
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Payment</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentStatus("unpaid")}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${paymentStatus === "unpaid"
+                    ? "border-amber-200 bg-amber-50 text-amber-700 ring-2 ring-amber-200/20"
+                    : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                    }`}
+                >
+                  <span className="text-xs font-bold uppercase">Unpaid</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentStatus("paid")}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${paymentStatus === "paid"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-200/20"
+                    : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                    }`}
+                >
+                  <span className="text-xs font-bold uppercase">Paid</span>
+                </button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Catalog Selection */}
+          <Card className="p-5 border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden flex flex-col h-[400px]">
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-primary rounded-full" />
+              Item Catalog
+            </h3>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {inventory.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleAddItem(item.id as string)}
+                  className="w-full text-left p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50 hover:border-blue-200 transition-all group relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-slate-900 group-hover:text-primary transition-colors text-sm">{item.name}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.category}</div>
+                    </div>
+                    <div className="bg-white px-2 py-0.5 rounded-full border border-slate-200 text-[10px] font-bold text-slate-600">
+                      LKR {item.rental_rate_per_day}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${item.quantity_available > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                      <span className="text-[11px] font-medium text-slate-500">Stock: {item.quantity_available}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">ADD +</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-8 space-y-6">
+          {/* Selected Items List */}
+          <Card className="p-0 border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden flex flex-col h-full min-h-[500px]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-primary rounded-full" />
+                Selected Items
+              </h3>
+              {selectedItems.length > 0 && (
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                  {selectedItems.length} {selectedItems.length === 1 ? 'Item' : 'Items'}
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-x-auto">
+              {selectedItems.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-2xl text-slate-300">🛒</span>
+                  </div>
+                  <p className="text-slate-400 font-medium">Your selection is empty</p>
+                  <p className="text-xs text-slate-400 mt-1">Add items from the catalog on the left to get started.</p>
+                </div>
+              ) : (
+                <table className="w-full">
                   <thead>
-                    <tr className="border-b-2 border-primary">
-                      <th className="text-left py-2 px-3 font-semibold text-primary">Item Name</th>
-                      <th className="text-center py-2 px-3 font-semibold text-primary">Qty</th>
-                      <th className="text-center py-2 px-3 font-semibold text-primary">Days</th>
-                      <th className="text-right py-2 px-3 font-semibold text-primary">Price</th>
-                      <th className="text-right py-2 px-3 font-semibold text-primary">Total</th>
-                      <th className="text-left py-2 px-3 font-semibold text-primary">Serial #</th>
-                      <th className="text-left py-2 px-3 font-semibold text-primary">Condition</th>
-                      <th className="text-center py-2 px-3 font-semibold text-primary">Action</th>
+                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-left">
+                      <th className="py-4 px-6 border-b border-slate-100">Equipment</th>
+                      <th className="py-4 px-4 border-b border-slate-100 text-center">Qty</th>
+                      <th className="py-4 px-4 border-b border-slate-100 text-right">Rate</th>
+                      <th className="py-4 px-4 border-b border-slate-100 text-right">Subtotal</th>
+                      <th className="py-4 px-4 border-b border-slate-100 text-center">Configuration</th>
+                      <th className="py-4 px-6 border-b border-slate-100 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-50">
                     {selectedItems.map((si) => {
                       const item = inventory.find((i) => i.id === si.id) as ItemWithSerials
                       const itemTotal = si.price * si.quantity * numberOfDays
-                      const availableSerials = item?.serial_numbers?.filter(s => s.status === "Available").map(s => s.serial_code) || []
                       return (
-                        <tr key={si.id} className="border-b border-blue-100 hover:bg-blue-100">
-                          <td className="py-3 px-3">{item?.name}</td>
-                          <td className="py-3 px-3 text-center">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={si.quantity}
-                              onChange={(e) =>
-                                handleQuantityChange(si.id, Number.parseInt(e.target.value))
-                              }
-                              className="w-16 h-8"
-                            />
+                        <tr key={si.id} className="group hover:bg-slate-50/50 transition-colors">
+                          <td className="py-4 px-6">
+                            <div className="font-semibold text-slate-900 text-sm">{item?.name}</div>
+                            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">{item?.category}</div>
                           </td>
-                          <td className="py-3 px-3 text-center font-semibold text-primary">
-                            {numberOfDays}
+                          <td className="py-4 px-4">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleQuantityChange(si.id, si.quantity - 1)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 transition-colors text-slate-400 font-bold"
+                              >
+                                -
+                              </button>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={si.quantity}
+                                onChange={(e) => handleQuantityChange(si.id, Number.parseInt(e.target.value))}
+                                className="w-10 h-7 text-xs p-0 text-center border-none shadow-none focus-visible:ring-0 font-bold"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleQuantityChange(si.id, si.quantity + 1)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 transition-colors text-slate-400 font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
                           </td>
-                          <td className="py-3 px-3 text-right">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={si.price}
-                              onChange={(e) =>
-                                handlePriceChange(si.id, Number.parseFloat(e.target.value) || 0)
-                              }
-                              className="w-20 h-8 text-right"
-                              placeholder="0.00"
-                            />
+                          <td className="py-4 px-4 text-right">
+                            <div className="relative inline-block w-24">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">LKR</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={si.price}
+                                onChange={(e) => handlePriceChange(si.id, Number.parseFloat(e.target.value) || 0)}
+                                className="h-8 text-xs text-right pl-7 border-slate-200 focus:border-primary font-medium"
+                              />
+                            </div>
                           </td>
-                          <td className="py-3 px-3 text-right font-semibold text-primary">
-                            {itemTotal.toFixed(2)}
+                          <td className="py-4 px-4 text-right">
+                            <div className="text-sm font-bold text-slate-900">
+                              {itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </div>
+                            <div className="text-[10px] font-medium text-slate-400">{numberOfDays} {numberOfDays === 1 ? 'Day' : 'Days'}</div>
                           </td>
-                          <td className="py-3 px-3">
-                            {availableSerials.length > 0 ? (
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col gap-1.5 items-center">
                               <Button
                                 type="button"
                                 size="sm"
@@ -452,95 +525,72 @@ export function CreateIssueForm() {
                                   setSelectedItemForSerials(si)
                                   setShowSerialModal(true)
                                 }}
-                                className="text-xs h-8"
+                                className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider transition-all ${si.serialNumbers.length > 0
+                                  ? "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                                  : "border-slate-200 text-slate-400 hover:text-slate-600"
+                                  }`}
                               >
-                                {si.serialNumbers.length > 0 ? (
-                                  <span className="text-primary font-semibold">{si.serialNumbers.length} Selected</span>
-                                ) : (
-                                  <span>Select Serials</span>
-                                )}
+                                {si.serialNumbers.length > 0
+                                  ? `${si.serialNumbers.length} Serial(s)`
+                                  : "Assign Serials"}
                               </Button>
-                            ) : (
-                              <span className="text-red-600 text-xs font-semibold">No serials</span>
-                            )}
+                              <select
+                                value={si.condition}
+                                onChange={(e) => handleConditionChange(si.id, e.target.value)}
+                                className="text-[10px] font-bold border-none bg-slate-100 rounded-lg px-2 py-1 text-slate-500 uppercase tracking-tighter focus:ring-0 cursor-pointer hover:bg-slate-200 transition-colors"
+                              >
+                                <option value="Good">Good Condition</option>
+                                <option value="Fair">Fair Condition</option>
+                                <option value="Poor">Poor Condition</option>
+                              </select>
+                            </div>
                           </td>
-                          <td className="py-3 px-3">
-                            <select
-                              value={si.condition}
-                              onChange={(e) => handleConditionChange(si.id, e.target.value)}
-                              className="border border-blue-200 rounded px-2 py-1 text-xs"
-                            >
-                              <option value="Good">Good</option>
-                              <option value="Fair">Fair</option>
-                              <option value="Poor">Poor</option>
-                            </select>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <Button
+                          <td className="py-4 px-6 text-right">
+                            <button
                               type="button"
-                              variant="destructive"
-                              size="sm"
                               onClick={() => handleRemoveItem(si.id)}
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
                             >
-                              Remove
-                            </Button>
+                              ✕
+                            </button>
                           </td>
                         </tr>
                       )
                     })}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            {/* Sticky Summary & Footer */}
+            <div className="p-6 bg-slate-900 border-t border-slate-800">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-8">
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Grand Total</div>
+                    <div className="text-2xl font-black text-white tracking-tight flex items-baseline gap-1">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">LKR</span>
+                      {getTotalAmount().toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className={`px-4 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-widest transition-all ${paymentStatus === "paid"
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                    }`}>
+                    {paymentStatus === "paid" ? "✅ Fully Paid" : "⏳ Unpaid / Pending"}
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={!selectedCustomerId || selectedItems.length === 0}
+                  className="w-full md:w-auto px-10 py-6 bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 text-sm font-bold uppercase tracking-widest disabled:opacity-50 disabled:grayscale disabled:shadow-none"
+                >
+                  Confirm & Generate Receipt
+                </Button>
               </div>
             </div>
-          )}
-        </Card>
-
-        {/* Total Amount */}
-        {selectedItems.length > 0 && (
-          <Card className="p-6 bg-green-50 border-green-100">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-primary text-lg">Total Amount:</span>
-              <span className="text-2xl font-bold text-green-600">{getTotalAmount().toFixed(2)}</span>
-            </div>
           </Card>
-        )}
-
-        {/* Payment Status */}
-        <Card className="p-6 bg-blue-50 border-blue-100">
-          <h3 className="font-semibold text-primary mb-4">Payment Status</h3>
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="radio"
-                value="unpaid"
-                checked={paymentStatus === "unpaid"}
-                onChange={(e) => setPaymentStatus(e.target.value as "unpaid" | "paid")}
-                className="w-4 h-4"
-              />
-              <span className="text-primary">Unpaid / On Account</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="radio"
-                value="paid"
-                checked={paymentStatus === "paid"}
-                onChange={(e) => setPaymentStatus(e.target.value as "unpaid" | "paid")}
-                className="w-4 h-4"
-              />
-              <span className="text-primary">Paid</span>
-            </label>
-          </div>
-        </Card>
-
-        {/* Submit Button */}
-        <div className="flex gap-3">
-          <Button
-            type="submit"
-            className="bg-primary hover:bg-primary/90 text-white"
-            disabled={!selectedCustomerId || selectedItems.length === 0}
-          >
-            Generate Issue Receipt
-          </Button>
         </div>
       </form>
 
