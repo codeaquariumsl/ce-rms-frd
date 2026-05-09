@@ -7,8 +7,7 @@
  * ---------------------------------------------------------------------------
  */
 
-const NEXT_PUBLIC_API_URL = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : undefined
-const BASE_URL = (NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(/\/$/, "")
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "")
 
 function getUrl(path: string) {
   const cleanPath = path.startsWith("/") ? path : `/${path}`
