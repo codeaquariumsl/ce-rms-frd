@@ -8,17 +8,18 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { generateBarcode } from "@/lib/barcode-generator"
 import type { Category, InventoryItem } from "@/lib/types"
-import { getCategories, createInventoryItem } from "@/lib/db"
+import { getCategories, createInventoryItem, updateInventoryItem, saveItemSerials } from "@/lib/db"
 
 interface AddInventoryFormProps {
   organizationId: number
+  editItem?: InventoryItem | null
   onSuccess?: () => void
   onCancel?: () => void
 }
 
 // const CATEGORIES_STORAGE_KEY = "rms_categories"
 
-export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInventoryFormProps) {
+export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel }: AddInventoryFormProps) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [formData, setFormData] = useState({
@@ -36,6 +37,36 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
   useEffect(() => {
     loadCategories()
   }, [organizationId])
+
+  useEffect(() => {
+    if (editItem) {
+      setFormData({
+        name: editItem.name || "",
+        description: editItem.description || "",
+        category_id: editItem.category_id ? String(editItem.category_id) : "",
+        sku: editItem.sku || "",
+        rental_rate_per_day: editItem.rental_rate_per_day ? String(editItem.rental_rate_per_day) : "",
+        rental_rate_per_week: editItem.rental_rate_per_week ? String(editItem.rental_rate_per_week) : "",
+        rental_rate_per_month: editItem.rental_rate_per_month ? String(editItem.rental_rate_per_month) : "",
+        quantity: editItem.quantity_total || 1,
+        serialNumbers: editItem.serial_numbers && editItem.serial_numbers.length > 0
+          ? editItem.serial_numbers.map(sn => sn.serial_code)
+          : [""],
+      })
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        category_id: "",
+        sku: "",
+        rental_rate_per_day: "",
+        rental_rate_per_week: "",
+        rental_rate_per_month: "",
+        quantity: 1,
+        serialNumbers: [""],
+      })
+    }
+  }, [editItem])
 
   async function loadCategories() {
     try {
@@ -57,22 +88,64 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
     try {
       setLoading(true)
 
-      const tempBarcode = generateBarcode(Date.now(), organizationId)
+      if (editItem) {
+        // Update existing item
+        const updatePayload = {
+          name: formData.name,
+          description: formData.description,
+          category_id: formData.category_id ? Number.parseInt(formData.category_id) : null,
+          sku: formData.sku,
+          rental_rate_per_day: Number.parseFloat(formData.rental_rate_per_day),
+          rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
+          rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
+        }
 
-      const itemPayload = {
-        org_id: organizationId,
-        name: formData.name,
-        description: formData.description,
-        category_id: formData.category_id ? Number.parseInt(formData.category_id) : null,
-        sku: formData.sku,
-        barcode: tempBarcode,
-        rental_rate_per_day: Number.parseFloat(formData.rental_rate_per_day),
-        rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
-        rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
-        serial_numbers: formData.serialNumbers.filter(sn => sn.trim() !== "")
+        await updateInventoryItem(editItem.id, updatePayload)
+
+        // Save serial numbers if any changes were made
+        const originalSerials = editItem.serial_numbers || [];
+        const serialsPayload = formData.serialNumbers
+          .filter(sn => sn.trim() !== "")
+          .map(sn => {
+            const original = originalSerials.find(o => o.serial_code.trim() === sn.trim());
+            return {
+              serial_code: sn.trim(),
+              status: original ? original.status : "Available"
+            };
+          });
+
+        await saveItemSerials(editItem.id, serialsPayload)
+
+      } else {
+        // Create new item
+        const tempBarcode = generateBarcode(Date.now(), organizationId)
+
+        const itemPayload = {
+          org_id: organizationId,
+          name: formData.name,
+          description: formData.description,
+          category_id: formData.category_id ? Number.parseInt(formData.category_id) : null,
+          sku: formData.sku,
+          barcode: tempBarcode,
+          rental_rate_per_day: Number.parseFloat(formData.rental_rate_per_day),
+          rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
+          rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
+        }
+
+        const newItem = await createInventoryItem(itemPayload)
+
+        // Save serial numbers for new item
+        const serialsPayload = formData.serialNumbers
+          .filter(sn => sn.trim() !== "")
+          .map(sn => ({
+            serial_code: sn.trim(),
+            status: "Available"
+          }));
+
+        if (serialsPayload.length > 0 && newItem && newItem.id) {
+          await saveItemSerials(newItem.id, serialsPayload)
+        }
       }
-
-      await createInventoryItem(itemPayload)
 
       setFormData({
         name: "",
@@ -88,8 +161,8 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
 
       onSuccess?.()
     } catch (error) {
-      console.error("Failed to add inventory:", error)
-      alert("Failed to add inventory item")
+      console.error("Failed to save inventory:", error)
+      alert("Failed to save inventory item: " + (error as Error).message)
     } finally {
       setLoading(false)
     }
@@ -97,7 +170,7 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
 
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Add Inventory Item</h2>
+      <h2 className="text-xl font-semibold mb-4">{editItem ? "Edit Inventory Item" : "Add Inventory Item"}</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
@@ -254,7 +327,7 @@ export function AddInventoryForm({ organizationId, onSuccess, onCancel }: AddInv
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Adding..." : "Add Item"}
+            {loading ? (editItem ? "Updating..." : "Adding...") : (editItem ? "Update Item" : "Add Item")}
           </Button>
         </div>
       </form>

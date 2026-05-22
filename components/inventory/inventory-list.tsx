@@ -157,7 +157,11 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="font-semibold text-lg">{item.name}</h3>
-                <p className="text-sm text-muted-foreground">SKU: {item.sku}</p>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                  <span>SKU: {item.sku}</span>
+                  <span>•</span>
+                  <span className="font-medium text-foreground">No of Qty: {item.quantity_total}</span>
+                </div>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -195,14 +199,13 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
                 <p className="text-xs font-semibold text-primary mb-1">Serial Numbers: {item.serial_numbers.length}</p>
                 <div className="flex flex-wrap gap-1">
                   {item.serial_numbers.slice(0, 5).map((sn) => (
-                    <Badge 
-                      key={sn.id} 
-                      variant="outline" 
-                      className={`text-[10px] font-mono ${
-                        sn.status === 'Available' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
-                        sn.status === 'Damaged' ? 'border-rose-200 text-rose-700 bg-rose-50' :
-                        'border-slate-200 text-slate-500 bg-slate-50'
-                      }`}
+                    <Badge
+                      key={sn.id}
+                      variant="outline"
+                      className={`text-[10px] font-mono ${sn.status === 'Available' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
+                          sn.status === 'Damaged' ? 'border-rose-200 text-rose-700 bg-rose-50' :
+                            'border-slate-200 text-slate-500 bg-slate-50'
+                        }`}
                     >
                       {sn.serial_code}
                       <span className="ml-1 text-[8px] opacity-70">({sn.status})</span>
@@ -218,6 +221,10 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
             )}
 
             <div className="space-y-2 text-sm">
+              <div className="flex justify-between border-b border-muted pb-1.5 mb-1.5 text-xs text-muted-foreground">
+                <span>Total Serials: {item.quantity_total}</span>
+                <span>Available: {item.quantity_available}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Rate/Day:</span>
                 <span className="font-medium">{item.rental_rate_per_day}</span>

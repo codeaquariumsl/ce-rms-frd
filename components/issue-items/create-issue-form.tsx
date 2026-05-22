@@ -8,14 +8,15 @@ import { Label } from "@/components/ui/label"
 import { IssueReceipt } from "./issue-receipt"
 import { SerialSelectionModal } from "./serial-selection-modal"
 import { ChevronDown } from "lucide-react"
-import { getCustomers, getInventoryItems, createBooking, checkAvailability, createIssue } from "@/lib/db"
-import { generateIssuePDF, type IssueReceiptData } from "./issue-receipt"
+import { getCustomers, getInventoryItems, createBooking, checkAvailability, createIssue, getCustomerById } from "@/lib/db"
+import { generateIssuePDF, printIssuePDF, type IssueReceiptData } from "./issue-receipt"
 
 interface Customer {
   id: string
   name: string
   phone?: string
   address?: string
+  nic?: string
 }
 
 interface InventoryItem {
@@ -257,20 +258,46 @@ export function CreateIssueForm() {
 
       const result = await createIssue(payload)
 
-      // Automatically generate and download the PDF receipt
-      const customer = customers.find((c) => c.id === selectedCustomerId)
+      // Automatically generate and print the PDF receipt
+      let customerName = "N/A"
+      let customerPhone = "N/A"
+      let customerAddress = ""
+      let customerNIC = ""
+
+      const customer = customers.find((c) => String(c.id) === String(selectedCustomerId))
+      if (customer) {
+        customerName = customer.name || "N/A"
+        customerPhone = customer.phone || "N/A"
+        customerAddress = customer.address || ""
+        customerNIC = customer.nic || ""
+      } else if (selectedCustomerId) {
+        try {
+          const fetchedCustomer = await getCustomerById(Number(selectedCustomerId))
+          if (fetchedCustomer) {
+            customerName = fetchedCustomer.name || "N/A"
+            customerPhone = fetchedCustomer.phone || "N/A"
+            customerAddress = fetchedCustomer.address || ""
+            customerNIC = fetchedCustomer.nic || ""
+          }
+        } catch (cErr) {
+          console.error("Failed to fetch customer dynamically:", cErr)
+        }
+      }
+
       const receiptData: IssueReceiptData = {
         id: result.id,
         issue_number: result.issue_number,
-        customer_name: customer?.name || "N/A",
-        customer_phone: customer?.phone || "N/A",
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_address: customerAddress,
+        customer_nic: customerNIC,
         status: "Issued",
         issue_date: issueDate,
         return_date: returnDate,
         total_amount: getTotalAmount(),
         payment_status: paymentStatus,
         items: selectedItems.map((si) => {
-          const item = inventory.find((i) => i.id === si.id)
+          const item = inventory.find((i) => String(i.id) === String(si.id))
           return {
             id: Number(item?.id),
             name: item?.name || "N/A",
@@ -281,9 +308,9 @@ export function CreateIssueForm() {
         }),
       }
 
-      await generateIssuePDF(receiptData)
+      await printIssuePDF(receiptData)
 
-      alert("Issue processed successfully! Receipt is downloading...")
+      alert("Issue processed successfully! Receipt print dialog has been triggered.")
 
       // Reset form
       setSelectedItems([])

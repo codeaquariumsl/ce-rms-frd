@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ChevronDown, Search, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react'
 
-import { getIssues, getIssueById, updateIssue } from '@/lib/db'
+import { getIssues, getIssueById, updateIssue, getCustomerById } from '@/lib/db'
 import { IssueReceipt } from './issue-receipt'
 
 interface IssueItem {
@@ -187,38 +187,56 @@ export function IssueHistoryList() {
   }
 
   async function handlePrintReceipt(issue: IssueItem) {
-    let issueWithItems = issue
-    if (issue.items.length === 0) {
-      try {
-        const details = await getIssueById(Number(issue.id))
-        const itemsWithMappedFields = details.items.map((item: any) => ({
-          id: String(item.inventory_item_id),
-          name: item.name,
-          quantity: item.quantity,
-          condition: 'Good',
-          price: Number(item.price || 0),
-          serialNumbers: item.serial_codes || []
-        }))
-        issueWithItems = { ...issue, items: itemsWithMappedFields }
-      } catch (error) {
-        console.error("Failed to fetch details for receipt:", error)
-        alert("Failed to load issue details for printing.")
-        return
-      }
-    }
+    try {
+      const details = await getIssueById(Number(issue.id))
+      const itemsWithMappedFields = details.items.map((item: any) => ({
+        id: item.inventory_item_id,
+        name: item.name,
+        quantity: item.quantity,
+        price: Number(item.price || 0),
+        serial_codes: item.serial_codes || []
+      }))
 
-    setSelectedReceiptData({
-      id: issueWithItems.issueNumber,
-      customer: issueWithItems.customer,
-      items: issueWithItems.items,
-      issueDate: issueWithItems.issueDate,
-      numberOfDays: issueWithItems.numberOfDays,
-      returnDate: issueWithItems.returnDate,
-      totalAmount: issueWithItems.totalAmount,
-      paymentStatus: issueWithItems.paymentStatus,
-      issuedDate: issueWithItems.issuedDate,
-      issueNumber: issueWithItems.issueNumber
-    })
+      let customerName = details.customer_name || "N/A"
+      let customerPhone = details.customer_phone || "N/A"
+      let customerAddress = details.customer_address || ""
+      let customerNIC = details.customer_nic || ""
+
+      // Dynamically fetch and merge customer details if missing or N/A
+      const customerId = details.customer_id || issue.customer.id
+      if (customerId) {
+        try {
+          const customer = await getCustomerById(Number(customerId))
+          if (customer) {
+            if (customerName === "N/A" || !customerName) customerName = customer.name || "N/A"
+            if (customerPhone === "N/A" || !customerPhone) customerPhone = customer.phone || "N/A"
+            if (!customerAddress) customerAddress = customer.address || ""
+            if (!customerNIC) customerNIC = customer.nic || ""
+          }
+        } catch (cErr) {
+          console.error("Failed to fetch customer profile fallback:", cErr)
+        }
+      }
+
+      setSelectedReceiptData({
+        id: Number(details.id),
+        issue_number: details.issue_number,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_address: customerAddress,
+        customer_nic: customerNIC,
+        status: details.status || "Issued",
+        issue_date: details.issue_date,
+        return_date: details.return_date,
+        total_amount: Number(details.total_amount || 0),
+        payment_status: details.payment_status,
+        items: itemsWithMappedFields,
+        notes: details.notes || ""
+      })
+    } catch (error) {
+      console.error("Failed to fetch details for receipt:", error)
+      alert("Failed to load issue details for printing.")
+    }
   }
 
   useEffect(() => {

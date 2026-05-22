@@ -58,6 +58,7 @@ export default function InventoryPage() {
             {showAddForm ? (
               <AddInventoryForm
                 organizationId={organizationId}
+                editItem={selectedItem}
                 onSuccess={handleFormSuccess}
                 onCancel={handleFormCancel}
               />
