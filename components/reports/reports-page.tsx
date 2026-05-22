@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Download } from "lucide-react"
-import { getInventoryReport, getRentalHistoryReport, getDeliveryScheduleReport, getPendingReturnsReport } from "@/lib/db"
+import { getInventoryReport, getRentalHistoryReport, getDeliveryScheduleReport, getPendingReturnsReport, getCustomerIssuesReport } from "@/lib/db"
 
 interface ReportsPageProps {
   organizationId: number
@@ -30,6 +30,10 @@ export function ReportsPage({ organizationId }: ReportsPageProps) {
           result = await getInventoryReport(organizationId)
           break
 
+        case "customer-issues":
+          result = await getCustomerIssuesReport(organizationId)
+          break
+
         case "rental-history":
           result = await getRentalHistoryReport(organizationId)
           break
@@ -41,6 +45,7 @@ export function ReportsPage({ organizationId }: ReportsPageProps) {
         case "pending-returns":
           result = await getPendingReturnsReport(organizationId)
           break
+
       }
 
       setReportData(result)
@@ -72,9 +77,10 @@ export function ReportsPage({ organizationId }: ReportsPageProps) {
   return (
     <div className="space-y-6">
       {/* Report Selection */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
         {[
           { id: "inventory", label: "Inventory Status" },
+          { id: "customer-issues", label: "Customer-wise Issues" },
           { id: "rental-history", label: "Rental History" },
           { id: "delivery-schedule", label: "Delivery Schedule" },
           { id: "pending-returns", label: "Pending Returns" },
@@ -99,11 +105,19 @@ export function ReportsPage({ organizationId }: ReportsPageProps) {
           {reportData.summary && (
             <Card className="p-6 bg-muted">
               <h3 className="font-semibold mb-4">Summary</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(reportData.summary).map(([key, value]) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                {Object.entries(reportData.summary).map(([key, value]: any) => (
                   <div key={key}>
                     <p className="text-sm text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
-                    <p className="text-2xl font-bold">{String(value)}</p>
+                    <p className="text-2xl font-bold">
+                      {value === null
+                        ? "-"
+                        : key.toLowerCase().includes("amount") || key.toLowerCase().includes("revenue") || key.toLowerCase().includes("rate")
+                          ? typeof value === "number" || !isNaN(Number(value))
+                            ? `LKR ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : String(value)
+                          : String(value)}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -136,8 +150,16 @@ export function ReportsPage({ organizationId }: ReportsPageProps) {
                   <TableBody>
                     {reportData.data.map((row: any, idx: number) => (
                       <TableRow key={idx}>
-                        {Object.values(row).map((value: any, cellIdx: number) => (
-                          <TableCell key={cellIdx}>{value === null ? "-" : String(value)}</TableCell>
+                        {Object.entries(row).map(([key, value]: any, cellIdx: number) => (
+                          <TableCell key={cellIdx}>
+                            {value === null
+                              ? "-"
+                              : key.toLowerCase().includes("amount") || key.toLowerCase().includes("revenue") || key.toLowerCase().includes("rate")
+                                ? typeof value === "number" || !isNaN(Number(value))
+                                  ? `LKR ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                  : String(value)
+                                : String(value)}
+                          </TableCell>
                         ))}
                       </TableRow>
                     ))}

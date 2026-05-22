@@ -151,7 +151,9 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
 
   // Checkboxes
   // Box 1: Items Taken ("භාණ්ඩ රැගෙන ආවා")
-  // drawText("X", 73, 184, 12, helveticaBold, "center")
+  if (data.status === "Returned" || data.status === "Returned Damaged") {
+    drawText("X", 73, 184, 12, helveticaBold, "center")
+  }
 
   // Box 2: Paid Status ("මුදල් ගෙව්වා / Paid")
   if (data.payment_status === "paid") {

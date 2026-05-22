@@ -24,21 +24,21 @@ const navigationItems = [
     title: "Customers",
     href: "/customers",
   },
-  {
-    icon: QrCode,
-    title: "Bookings",
-    href: "/bookings",
-  },
+  // {
+  //   icon: QrCode,
+  //   title: "Bookings",
+  //   href: "/bookings",
+  // },
   {
     icon: Send,
     title: "Issue Items",
     href: "/issue-items",
   },
-  {
-    icon: Truck,
-    title: "Deliveries",
-    href: "/delivery",
-  },
+  // {
+  //   icon: Truck,
+  //   title: "Deliveries",
+  //   href: "/delivery",
+  // },
   {
     icon: RotateCcw,
     title: "Returns",
@@ -84,9 +84,8 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full w-64 bg-card border-r border-border transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } md:relative md:translate-x-0 z-30`}
+        className={`fixed left-0 top-0 h-full w-64 bg-card border-r border-border transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          } md:relative md:translate-x-0 z-30`}
       >
         <div className="p-6">
           {/* Logo/Brand */}
@@ -119,8 +118,8 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-border">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full justify-start gap-3 text-red-500 hover:text-red-600 hover:bg-red-50 mb-4"
             onClick={handleLogout}
           >

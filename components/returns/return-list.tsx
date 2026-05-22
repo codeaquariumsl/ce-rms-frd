@@ -29,14 +29,20 @@ export function ReturnList({ organizationId, overdueOnly = false, onViewReturn, 
       const data = await getPendingReturns(organizationId)
       
       let filtered = data
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
 
       if (overdueOnly) {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
         filtered = filtered.filter((item: any) => {
           const returnDate = new Date(item.returnDate)
           returnDate.setHours(0, 0, 0, 0)
           return returnDate < today
+        })
+      } else {
+        filtered = filtered.filter((item: any) => {
+          const returnDate = new Date(item.returnDate)
+          returnDate.setHours(0, 0, 0, 0)
+          return returnDate >= today
         })
       }
 

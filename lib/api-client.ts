@@ -164,12 +164,13 @@ export async function getIssueById(id: number) {
 }
 
 export async function createIssue(data: any) {
-  return post("/issues", data)
+  const json = await post("/issues", data)
+  return json.data ?? json
 }
 
 export async function updateIssue(id: number, data: any) {
   if (data.status) {
-    return patch(`/issues/${id}/status`, { status: data.status })
+    return patch(`/issues/${id}/status`, data)
   }
   if (data.payment_status) {
     return patch(`/issues/${id}/payment`, { payment_status: data.payment_status })
@@ -348,6 +349,11 @@ export async function getRentalHistoryReport(
   opts?: { customer_id?: number; from_date?: string; to_date?: string },
 ) {
   const json = await get("/reports/rental-history", { org_id: orgId, ...opts })
+  return json
+}
+
+export async function getCustomerIssuesReport(orgId: number) {
+  const json = await get("/reports/customer-issues", { org_id: orgId })
   return json
 }
 

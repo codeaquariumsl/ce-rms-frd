@@ -6,21 +6,19 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
+import { getCustomerIssuesReport } from '@/lib/db'
 
 interface CustomerReport {
-  customerId: string
   customerName: string
   nic: string
   phone: string
-  totalBookings: number
-  completedRentals: number
-  pendingRentals: number
-  totalSpent: number
-  lastRentalDate: string
-  status: 'Active' | 'Inactive'
+  totalIssues: number
+  totalAmount: number
+  issuedCount: number
+  returnedCount: number
+  returnedDamagedCount: number
+  cancelledCount: number
 }
-
-import { getCustomers, getBookings } from '@/lib/db'
 
 export function CustomerReports() {
   const [reports, setReports] = useState<CustomerReport[]>([])
@@ -33,34 +31,22 @@ export function CustomerReports() {
   async function generateReports() {
     try {
       setLoading(true)
-      const customers = await getCustomers(1) // Org ID 1
-      const bookings = await getBookings(1) // Org ID 1
+      const res = await getCustomerIssuesReport(1) // Org ID 1
+      const data = res.data || []
 
-      const reportsData = customers.map((customer: any) => {
-        const customerBookings = bookings.filter((b: any) => b.customer_id === customer.id)
-        const completedRentals = customerBookings.filter((b: any) => b.status === 'Returned').length
-        const pendingRentals = customerBookings.filter((b: any) => b.status !== 'Returned').length
-        const totalSpent = customerBookings.reduce((sum: number, b: any) => sum + Number(b.total_amount || 0), 0)
-        
-        const lastRentalDate = customerBookings.length > 0
-          ? new Date(Math.max(...customerBookings.map((b: any) => new Date(b.delivery_date).getTime()))).toLocaleDateString()
-          : 'N/A'
+      const reportsData = data.map((row: any) => ({
+        customerName: row.customer_name,
+        nic: row.customer_nic || 'N/A',
+        phone: row.customer_phone || 'N/A',
+        totalIssues: Number(row.total_issues) || 0,
+        totalAmount: Number(row.total_amount) || 0,
+        issuedCount: Number(row.issued_count) || 0,
+        returnedCount: Number(row.returned_count) || 0,
+        returnedDamagedCount: Number(row.returned_damaged_count) || 0,
+        cancelledCount: Number(row.cancelled_count) || 0,
+      }))
 
-        return {
-          customerId: String(customer.id),
-          customerName: customer.name,
-          nic: customer.nic,
-          phone: customer.phone,
-          totalBookings: customerBookings.length,
-          completedRentals,
-          pendingRentals,
-          totalSpent,
-          lastRentalDate,
-          status: customerBookings.length > 0 ? 'Active' : 'Inactive',
-        }
-      })
-
-      setReports(reportsData.sort((a: CustomerReport, b: CustomerReport) => b.totalBookings - a.totalBookings))
+      setReports(reportsData)
       setLoading(false)
     } catch (error) {
       console.error('Failed to generate reports:', error)
@@ -69,21 +55,20 @@ export function CustomerReports() {
     }
   }
 
-
   function exportToCSV() {
-    const headers = ['Customer Name', 'NIC', 'Phone', 'Total Bookings', 'Completed', 'Pending', 'Total Spent', 'Last Rental', 'Status']
+    const headers = ['Customer Name', 'NIC', 'Phone', 'Total Issues', 'Issued', 'Returned', 'Returned Damaged', 'Cancelled', 'Total Spent (LKR)']
     const csvContent = [
       headers.join(','),
       ...reports.map(r => [
-        r.customerName,
-        r.nic,
-        r.phone,
-        r.totalBookings,
-        r.completedRentals,
-        r.pendingRentals,
-        r.totalSpent.toFixed(2),
-        r.lastRentalDate,
-        r.status,
+        JSON.stringify(r.customerName),
+        JSON.stringify(r.nic),
+        JSON.stringify(r.phone),
+        r.totalIssues,
+        r.issuedCount,
+        r.returnedCount,
+        r.returnedDamagedCount,
+        r.cancelledCount,
+        r.totalAmount.toFixed(2),
       ].join(',')),
     ].join('\n')
 
@@ -91,7 +76,7 @@ export function CustomerReports() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'customer-reports.csv'
+    a.download = 'customer-wise-issues-report.csv'
     a.click()
   }
 
@@ -117,33 +102,35 @@ export function CustomerReports() {
                 <TableHead className='text-primary font-semibold'>Customer Name</TableHead>
                 <TableHead className='text-primary font-semibold'>NIC</TableHead>
                 <TableHead className='text-primary font-semibold'>Phone</TableHead>
-                <TableHead className='text-primary font-semibold text-right'>Total Bookings</TableHead>
-                <TableHead className='text-primary font-semibold text-right'>Completed</TableHead>
-                <TableHead className='text-primary font-semibold text-right'>Pending</TableHead>
+                <TableHead className='text-primary font-semibold text-right'>Total Issues</TableHead>
+                <TableHead className='text-primary font-semibold text-right'>Issued</TableHead>
+                <TableHead className='text-primary font-semibold text-right'>Returned</TableHead>
+                <TableHead className='text-primary font-semibold text-right'>Returned Damaged</TableHead>
+                <TableHead className='text-primary font-semibold text-right'>Cancelled</TableHead>
                 <TableHead className='text-primary font-semibold text-right'>Total Spent</TableHead>
-                <TableHead className='text-primary font-semibold'>Last Rental</TableHead>
-                <TableHead className='text-primary font-semibold'>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reports.map((report) => (
-                <TableRow key={report.customerId} className='hover:bg-blue-50'>
+              {reports.map((report, idx) => (
+                <TableRow key={idx} className='hover:bg-blue-50'>
                   <TableCell className='font-medium text-primary'>{report.customerName}</TableCell>
                   <TableCell className='font-mono text-sm'>{report.nic}</TableCell>
                   <TableCell>{report.phone}</TableCell>
-                  <TableCell className='text-right font-semibold text-primary'>{report.totalBookings}</TableCell>
+                  <TableCell className='text-right font-semibold text-primary'>{report.totalIssues}</TableCell>
                   <TableCell className='text-right'>
-                    <Badge className='bg-green-100 text-green-800'>{report.completedRentals}</Badge>
+                    <Badge className='bg-blue-100 text-blue-800 font-semibold'>{report.issuedCount}</Badge>
                   </TableCell>
                   <TableCell className='text-right'>
-                    <Badge className='bg-yellow-100 text-yellow-800'>{report.pendingRentals}</Badge>
+                    <Badge className='bg-green-100 text-green-800 font-semibold'>{report.returnedCount}</Badge>
                   </TableCell>
-                  <TableCell className='text-right font-semibold'>${report.totalSpent.toFixed(2)}</TableCell>
-                  <TableCell className='text-sm'>{report.lastRentalDate}</TableCell>
-                  <TableCell>
-                    <Badge className={report.status === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}>
-                      {report.status}
-                    </Badge>
+                  <TableCell className='text-right'>
+                    <Badge className='bg-red-100 text-red-800 font-semibold'>{report.returnedDamagedCount}</Badge>
+                  </TableCell>
+                  <TableCell className='text-right'>
+                    <Badge className='bg-gray-100 text-gray-800 font-semibold'>{report.cancelledCount}</Badge>
+                  </TableCell>
+                  <TableCell className='text-right font-semibold text-primary'>
+                    LKR {report.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                 </TableRow>
               ))}
@@ -164,16 +151,18 @@ export function CustomerReports() {
           <p className='text-3xl font-bold text-primary'>{reports.length}</p>
         </Card>
         <Card className='p-4 bg-gradient-to-br from-green-100 to-green-50 border border-green-200'>
-          <p className='text-sm text-muted-foreground mb-1'>Active Customers</p>
-          <p className='text-3xl font-bold text-green-700'>{reports.filter(r => r.status === 'Active').length}</p>
+          <p className='text-sm text-muted-foreground mb-1'>Active Customers (Has Issued)</p>
+          <p className='text-3xl font-bold text-green-700'>{reports.filter(r => r.issuedCount > 0).length}</p>
         </Card>
         <Card className='p-4 bg-gradient-to-br from-purple-100 to-purple-50 border border-purple-200'>
-          <p className='text-sm text-muted-foreground mb-1'>Total Rentals</p>
-          <p className='text-3xl font-bold text-purple-700'>{reports.reduce((sum, r) => sum + r.totalBookings, 0)}</p>
+          <p className='text-sm text-muted-foreground mb-1'>Total Issues</p>
+          <p className='text-3xl font-bold text-purple-700'>{reports.reduce((sum, r) => sum + r.totalIssues, 0)}</p>
         </Card>
         <Card className='p-4 bg-gradient-to-br from-orange-100 to-orange-50 border border-orange-200'>
           <p className='text-sm text-muted-foreground mb-1'>Total Revenue</p>
-          <p className='text-3xl font-bold text-orange-700'>${reports.reduce((sum, r) => sum + r.totalSpent, 0).toFixed(2)}</p>
+          <p className='text-3xl font-bold text-orange-700 font-mono'>
+            LKR {reports.reduce((sum, r) => sum + r.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
         </Card>
       </div>
     </div>

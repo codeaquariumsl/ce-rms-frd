@@ -41,46 +41,44 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Inventory Management</h1>
-          <p className="text-muted-foreground mt-2">Manage your rental items, categories, and track availability</p>
-        </div>
-
-        <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="inventory">Inventory Items</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="inventory" className="space-y-4">
-            {showAddForm ? (
-              <AddInventoryForm
-                organizationId={organizationId}
-                editItem={selectedItem}
-                onSuccess={handleFormSuccess}
-                onCancel={handleFormCancel}
-              />
-            ) : (
-              <InventoryList
-                key={refreshKey}
-                organizationId={organizationId}
-                onAddItem={handleAddItemClick}
-                onEditItem={handleEditItem}
-                onDeleteItem={handleDeleteItem}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="categories" className="space-y-4">
-            <CategoryManager
-              organizationId={organizationId}
-              onCategoryAdded={() => setRefreshKey((prev) => prev + 1)}
-            />
-          </TabsContent>
-        </Tabs>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Inventory Management</h1>
+        <p className="text-muted-foreground mt-2">Manage your rental items, categories, and track availability</p>
       </div>
+
+      <Tabs defaultValue="inventory" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="inventory">Inventory Items</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inventory" className="space-y-4">
+          {showAddForm ? (
+            <AddInventoryForm
+              organizationId={organizationId}
+              editItem={selectedItem}
+              onSuccess={handleFormSuccess}
+              onCancel={handleFormCancel}
+            />
+          ) : (
+            <InventoryList
+              key={refreshKey}
+              organizationId={organizationId}
+              onAddItem={handleAddItemClick}
+              onEditItem={handleEditItem}
+              onDeleteItem={handleDeleteItem}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="categories" className="space-y-4">
+          <CategoryManager
+            organizationId={organizationId}
+            onCategoryAdded={() => setRefreshKey((prev) => prev + 1)}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

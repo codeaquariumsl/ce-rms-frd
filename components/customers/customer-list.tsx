@@ -12,7 +12,7 @@ interface Customer {
   id: string
   nic: string
   name: string
-  email: string
+  email?: string
   phone: string
   address: string
   createdAt: string
@@ -75,7 +75,7 @@ export function CustomerList({ onEdit, onDelete }: CustomerListProps) {
                 <div className='grid grid-cols-2 gap-2 mt-2 text-sm text-muted-foreground'>
                   <p>NIC: <span className='font-medium text-foreground'>{customer.nic}</span></p>
                   <p>Phone: <span className='font-medium text-foreground'>{customer.phone}</span></p>
-                  <p>Email: <span className='font-medium text-foreground'>{customer.email}</span></p>
+                  <p>Email: <span className='font-medium text-foreground'>{customer.email || 'N/A'}</span></p>
                   <p>Address: <span className='font-medium text-foreground'>{customer.address}</span></p>
                 </div>
               </div>

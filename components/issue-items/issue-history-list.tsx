@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ChevronDown, Search, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react'
+import { ChevronDown, Search, CheckCircle, Clock, AlertCircle, FileText, Printer, Download, X } from 'lucide-react'
 
 import { getIssues, getIssueById, updateIssue, getCustomerById } from '@/lib/db'
-import { IssueReceipt } from './issue-receipt'
+import { IssueReceipt, printIssuePDF, generateIssuePDF } from './issue-receipt'
+import { CompleteReturnModal } from './complete-return-modal'
 
 interface IssueItem {
   id: string
@@ -34,6 +35,10 @@ export function IssueHistoryList() {
   const [loading, setLoading] = useState(true)
   const [selectedReceiptData, setSelectedReceiptData] = useState<any | null>(null)
 
+  // Complete Return Modal States
+  const [returnModalOpen, setReturnModalOpen] = useState(false)
+  const [activeReturnIssue, setActiveReturnIssue] = useState<IssueItem | null>(null)
+
 
   useEffect(() => {
     loadIssues()
@@ -43,7 +48,7 @@ export function IssueHistoryList() {
     try {
       setLoading(true)
       const data = await getIssues(1) // Organization ID 1
-      
+
       const mappedIssues = data.map((issue: any) => {
         const issueDate = new Date(issue.issue_date)
         const returnDate = new Date(issue.return_date)
@@ -87,7 +92,7 @@ export function IssueHistoryList() {
     }
 
     setExpandedId(issueId)
-    
+
     // Find the issue in state
     const issue = issues.find(i => i.id === issueId)
     if (issue && issue.items.length === 0) {
@@ -99,8 +104,8 @@ export function IssueHistoryList() {
           quantity: item.quantity,
           serialNumbers: item.serial_codes || []
         }))
-        
-        setIssues(prev => prev.map(i => 
+
+        setIssues(prev => prev.map(i =>
           i.id === issueId ? { ...i, items: itemsWithMappedFields } : i
         ))
       } catch (error) {
@@ -157,7 +162,7 @@ export function IssueHistoryList() {
   async function handleMarkAsPaid(issueId: string) {
     try {
       await updateIssue(Number(issueId), { payment_status: 'paid' })
-      setIssues(prev => prev.map(issue => 
+      setIssues(prev => prev.map(issue =>
         issue.id === issueId ? { ...issue, paymentStatus: 'paid' } : issue
       ))
       alert("Issue marked as Paid")
@@ -167,75 +172,76 @@ export function IssueHistoryList() {
     }
   }
 
-  async function handleMarkAsReturned(issueId: string) {
-    try {
-      // In this system, returning an issue also involves making serials available
-      // The backend should handle this when status is set to 'Returned'
-      await updateIssue(Number(issueId), { 
-        status: 'Returned',
-        payment_status: 'paid' // Usually returning also completes payment if not already done
-      })
-      
-      setIssues(prev => prev.map(issue => 
-        issue.id === issueId ? { ...issue, status: 'Returned', paymentStatus: 'paid' } : issue
-      ))
-      alert("Issue marked as Returned. Serials are now available.")
-    } catch (error) {
-      console.error("Failed to mark as returned:", error)
-      alert("Failed to mark as returned")
+  function handleOpenReturnModal(issue: IssueItem) {
+    setActiveReturnIssue(issue)
+    setReturnModalOpen(true)
+  }
+
+  async function fetchReceiptData(issue: IssueItem) {
+    const details = await getIssueById(Number(issue.id))
+    const itemsWithMappedFields = details.items.map((item: any) => ({
+      id: item.inventory_item_id,
+      name: item.name,
+      quantity: item.quantity,
+      price: Number(item.price || 0),
+      serial_codes: item.serial_codes || []
+    }))
+
+    let customerName = details.customer_name || "N/A"
+    let customerPhone = details.customer_phone || "N/A"
+    let customerAddress = details.customer_address || ""
+    let customerNIC = details.customer_nic || ""
+
+    // Dynamically fetch and merge customer details if missing or N/A
+    const customerId = details.customer_id || issue.customer.id
+    if (customerId) {
+      try {
+        const customer = await getCustomerById(Number(customerId))
+        if (customer) {
+          if (customerName === "N/A" || !customerName) customerName = customer.name || "N/A"
+          if (customerPhone === "N/A" || !customerPhone) customerPhone = customer.phone || "N/A"
+          if (!customerAddress) customerAddress = customer.address || ""
+          if (!customerNIC) customerNIC = customer.nic || ""
+        }
+      } catch (cErr) {
+        console.error("Failed to fetch customer profile fallback:", cErr)
+      }
+    }
+
+    return {
+      id: Number(details.id),
+      issue_number: details.issue_number,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      customer_address: customerAddress,
+      customer_nic: customerNIC,
+      status: details.status || "Issued",
+      issue_date: details.issue_date,
+      return_date: details.return_date,
+      total_amount: Number(details.total_amount || 0),
+      payment_status: details.payment_status,
+      items: itemsWithMappedFields,
+      notes: details.notes || ""
     }
   }
 
-  async function handlePrintReceipt(issue: IssueItem) {
+  async function handlePrint(issue: IssueItem) {
     try {
-      const details = await getIssueById(Number(issue.id))
-      const itemsWithMappedFields = details.items.map((item: any) => ({
-        id: item.inventory_item_id,
-        name: item.name,
-        quantity: item.quantity,
-        price: Number(item.price || 0),
-        serial_codes: item.serial_codes || []
-      }))
-
-      let customerName = details.customer_name || "N/A"
-      let customerPhone = details.customer_phone || "N/A"
-      let customerAddress = details.customer_address || ""
-      let customerNIC = details.customer_nic || ""
-
-      // Dynamically fetch and merge customer details if missing or N/A
-      const customerId = details.customer_id || issue.customer.id
-      if (customerId) {
-        try {
-          const customer = await getCustomerById(Number(customerId))
-          if (customer) {
-            if (customerName === "N/A" || !customerName) customerName = customer.name || "N/A"
-            if (customerPhone === "N/A" || !customerPhone) customerPhone = customer.phone || "N/A"
-            if (!customerAddress) customerAddress = customer.address || ""
-            if (!customerNIC) customerNIC = customer.nic || ""
-          }
-        } catch (cErr) {
-          console.error("Failed to fetch customer profile fallback:", cErr)
-        }
-      }
-
-      setSelectedReceiptData({
-        id: Number(details.id),
-        issue_number: details.issue_number,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_address: customerAddress,
-        customer_nic: customerNIC,
-        status: details.status || "Issued",
-        issue_date: details.issue_date,
-        return_date: details.return_date,
-        total_amount: Number(details.total_amount || 0),
-        payment_status: details.payment_status,
-        items: itemsWithMappedFields,
-        notes: details.notes || ""
-      })
+      const data = await fetchReceiptData(issue)
+      await printIssuePDF(data)
     } catch (error) {
-      console.error("Failed to fetch details for receipt:", error)
+      console.error("Failed to print receipt:", error)
       alert("Failed to load issue details for printing.")
+    }
+  }
+
+  async function handleDownload(issue: IssueItem) {
+    try {
+      const data = await fetchReceiptData(issue)
+      await generateIssuePDF(data)
+    } catch (error) {
+      console.error("Failed to download receipt:", error)
+      alert("Failed to load issue details for downloading.")
     }
   }
 
@@ -254,7 +260,23 @@ export function IssueHistoryList() {
       )
     }
 
-    setFilteredIssues(filtered)
+    // Sort: Overdue (0) first, Pending (1) second, Returned/Completed (2) last.
+    // Within same status priority, sort by issue date descending (newest first).
+    const sorted = [...filtered].sort((a, b) => {
+      const getPriority = (status?: string) => {
+        if (status === 'Overdue') return 0
+        if (status === 'Pending') return 1
+        return 2
+      }
+      const pA = getPriority(a.status)
+      const pB = getPriority(b.status)
+      if (pA !== pB) {
+        return pA - pB
+      }
+      return new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
+    })
+
+    setFilteredIssues(sorted)
   }, [issues, searchTerm, statusFilter])
 
   if (loading) {
@@ -263,9 +285,9 @@ export function IssueHistoryList() {
 
   if (selectedReceiptData) {
     return (
-      <IssueReceipt 
-        data={selectedReceiptData} 
-        onBack={() => setSelectedReceiptData(null)} 
+      <IssueReceipt
+        data={selectedReceiptData}
+        onBack={() => setSelectedReceiptData(null)}
       />
     )
   }
@@ -296,7 +318,7 @@ export function IssueHistoryList() {
               <option value="Returned">Returned</option>
             </select>
             <div className="h-10 px-4 flex items-center bg-slate-900 rounded-xl border border-slate-800 shadow-inner">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-3">Active Logs</span>
+              <span className="text-[10px] font-bold text-slate-100 uppercase tracking-widest mr-3">Active Logs</span>
               <span className="text-sm font-black text-white">{filteredIssues.length}</span>
             </div>
           </div>
@@ -316,22 +338,20 @@ export function IssueHistoryList() {
           filteredIssues.map((issue) => (
             <div
               key={issue.id}
-              className={`group bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${
-                expandedId === issue.id 
-                  ? "border-primary/30 shadow-xl shadow-primary/5 ring-1 ring-primary/5" 
-                  : "border-slate-100 hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/40"
-              }`}
+              className={`group bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${expandedId === issue.id
+                ? "border-primary/30 shadow-xl shadow-primary/5 ring-1 ring-primary/5"
+                : "border-slate-100 hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/40"
+                }`}
             >
               {/* Card Header Row */}
-              <div 
+              <div
                 className={`p-4 cursor-pointer transition-colors ${expandedId === issue.id ? 'bg-primary/[0.02]' : ''}`}
                 onClick={() => toggleExpand(issue.id)}
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                      expandedId === issue.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${expandedId === issue.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary'
+                      }`}>
                       <FileText className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
@@ -350,13 +370,12 @@ export function IssueHistoryList() {
                       <div className="text-sm font-black text-slate-900">LKR {issue.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${
-                        issue.status === 'Returned' 
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                          : issue.status === 'Overdue' 
-                            ? "bg-rose-50 text-rose-600 border-rose-100" 
-                            : "bg-amber-50 text-amber-600 border-amber-100"
-                      }`}>
+                      <div className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${issue.status === 'Returned'
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                        : issue.status === 'Overdue'
+                          ? "bg-rose-50 text-rose-600 border-rose-100"
+                          : "bg-amber-50 text-amber-600 border-amber-100"
+                        }`}>
                         {getStatusIcon(issue.status || 'Pending')}
                         {issue.status}
                       </div>
@@ -433,13 +452,25 @@ export function IssueHistoryList() {
                       <Button
                         onClick={(e) => {
                           e.stopPropagation()
-                          handlePrintReceipt(issue)
+                          handlePrint(issue)
                         }}
                         variant="outline"
                         className="flex-1 md:flex-none border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-[11px] uppercase tracking-wider h-10 rounded-xl"
                       >
-                        <FileText className="w-3.5 h-3.5 mr-2" />
-                        Reprint
+                        <Printer className="w-3.5 h-3.5 mr-2" />
+                        Print
+                      </Button>
+
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownload(issue)
+                        }}
+                        variant="outline"
+                        className="flex-1 md:flex-none border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-[11px] uppercase tracking-wider h-10 rounded-xl"
+                      >
+                        <Download className="w-3.5 h-3.5 mr-2" />
+                        Download PDF
                       </Button>
 
                       {issue.paymentStatus === 'unpaid' && (
@@ -453,12 +484,12 @@ export function IssueHistoryList() {
                           Mark Paid
                         </Button>
                       )}
-                      
+
                       {(issue.status === 'Pending' || issue.status === 'Overdue') && (
                         <Button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleMarkAsReturned(issue.id)
+                            handleOpenReturnModal(issue)
                           }}
                           className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white font-bold text-[11px] uppercase tracking-wider h-10 rounded-xl shadow-lg shadow-primary/20"
                         >
@@ -473,6 +504,17 @@ export function IssueHistoryList() {
           ))
         )}
       </div>
+
+      {/* Complete Return Custom Modal */}
+      <CompleteReturnModal
+        issue={activeReturnIssue!}
+        isOpen={returnModalOpen}
+        onClose={() => setReturnModalOpen(false)}
+        onSuccess={() => {
+          loadIssues()
+          alert("Return completed successfully! Triggering receipt print...")
+        }}
+      />
     </div>
   )
 }

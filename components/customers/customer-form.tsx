@@ -12,7 +12,7 @@ interface Customer {
   id: string
   nic: string
   name: string
-  email: string
+  email?: string
   phone: string
   address: string
   photo?: string
@@ -47,7 +47,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel }: CustomerFormP
       setFormData({
         nic: initialData.nic,
         name: initialData.name,
-        email: initialData.email,
+        email: initialData.email || '',
         phone: initialData.phone,
         address: initialData.address,
         photo: initialData.photo || '',
@@ -303,14 +303,13 @@ export function CustomerForm({ initialData, onSuccess, onCancel }: CustomerFormP
 
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <div className='space-y-2'>
-            <Label htmlFor='email' className='text-primary font-semibold'>Email *</Label>
+            <Label htmlFor='email' className='text-primary font-semibold'>Email (Optional)</Label>
             <Input
               id='email'
               type='email'
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder='Enter email'
-              required
+              placeholder='Enter email (optional)'
               className='border-blue-200 focus:ring-primary'
             />
           </div>

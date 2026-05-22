@@ -72,6 +72,7 @@ export {
   getDeliveryScheduleReport,
   getPendingReturnsReport,
   getRentalHistoryReport,
+  getCustomerIssuesReport,
 
   // Barcode
   scanBarcode,
