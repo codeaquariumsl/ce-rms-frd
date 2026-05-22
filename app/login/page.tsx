@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 bg-slate-950">
       {/* Background with Overlay */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40 blur-[2px]"
         style={{ backgroundImage: `url('/login_bg.png')` }} // Note: Mapping logic in next.config or public dir might be needed
       />
@@ -95,8 +95,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={loading}
             className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]"
           >
@@ -110,10 +110,18 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-8 text-center">
-          <p className="text-sm text-slate-500">
+        <div className="mt-8 text-center space-y-2">
+          <p className="text-sm text-slate-400">
             Don't have an account?{' '}
-            <button className="text-blue-400 font-semibold hover:underline">Contact Admin</button>
+            <a
+              href="tel:0750706850"
+              className="text-blue-400 font-semibold hover:text-blue-300 hover:underline transition-colors"
+            >
+              Contact Admin
+            </a>
+          </p>
+          <p className="text-xs text-slate-500">
+            Code Aqua Pvt Ltd
           </p>
         </div>
       </Card>

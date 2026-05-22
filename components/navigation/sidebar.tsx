@@ -90,8 +90,8 @@ export function Sidebar() {
         <div className="p-6">
           {/* Logo/Brand */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-primary">RMS</h1>
-            <p className="text-xs text-muted-foreground">Rental Management</p>
+            <h1 className="text-xl font-bold text-primary">Chamith Enterprises</h1>
+            <p className="text-xs text-muted-foreground">Rental Management System</p>
           </div>
 
           {/* Navigation Links */}
@@ -127,8 +127,8 @@ export function Sidebar() {
             <span>Logout</span>
           </Button>
           <div className="text-xs text-muted-foreground">
-            <p className="font-semibold mb-1">System v1.0</p>
-            <p>Powered by RMS</p>
+            <p className="font-semibold mb-1">System v1.0.6</p>
+            <p>Powered by Code Aqua</p>
           </div>
         </div>
       </aside>
