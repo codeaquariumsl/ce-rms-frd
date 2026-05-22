@@ -133,6 +133,7 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         }
 
         const newItem = await createInventoryItem(itemPayload)
+        const newItemId = newItem?.id || newItem?.data?.id
 
         // Save serial numbers for new item
         const serialsPayload = formData.serialNumbers
@@ -142,8 +143,8 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
             status: "Available"
           }));
 
-        if (serialsPayload.length > 0 && newItem && newItem.id) {
-          await saveItemSerials(newItem.id, serialsPayload)
+        if (serialsPayload.length > 0 && newItemId) {
+          await saveItemSerials(newItemId, serialsPayload)
         }
       }
 
