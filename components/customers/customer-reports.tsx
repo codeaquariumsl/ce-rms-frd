@@ -60,7 +60,7 @@ export function CustomerReports() {
         }
       })
 
-      setReports(reportsData.sort((a, b) => b.totalBookings - a.totalBookings))
+      setReports(reportsData.sort((a: CustomerReport, b: CustomerReport) => b.totalBookings - a.totalBookings))
       setLoading(false)
     } catch (error) {
       console.error('Failed to generate reports:', error)

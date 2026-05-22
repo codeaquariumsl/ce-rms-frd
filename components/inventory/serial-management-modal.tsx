@@ -12,8 +12,8 @@ interface SerialManagementModalProps {
   isOpen: boolean
   itemName: string
   itemId: number
-  currentSerials: Array<{ id: string; serial_code: string; status: string }>
-  onSave: (serials: Array<{ id: string; serial_code: string; status: string }>) => void
+  currentSerials: Array<{ id: string | number; serial_code: string; status: string }>
+  onSave: (serials: Array<{ id: string | number; serial_code: string; status: string }>) => void
   onCancel: () => void
 }
 
@@ -25,7 +25,7 @@ export function SerialManagementModal({
   onSave,
   onCancel,
 }: SerialManagementModalProps) {
-  const [serials, setSerials] = useState<Array<{ id: string; serial_code: string; status: string }>>(currentSerials)
+  const [serials, setSerials] = useState<Array<{ id: string | number; serial_code: string; status: string }>>(currentSerials)
   const [newSerial, setNewSerial] = useState("")
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export function SerialManagementModal({
     setNewSerial("")
   }
 
-  const handleRemoveSerial = (id: string) => {
+  const handleRemoveSerial = (id: string | number) => {
     setSerials(serials.filter((s) => s.id !== id))
   }
 

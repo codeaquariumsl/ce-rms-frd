@@ -45,11 +45,13 @@ export function ReturnForm({ returnId, onSuccess, onCancel }: ReturnFormProps) {
       setSubmitting(true)
 
       const payload = {
-        condition: condition,
-        notes: damageNotes,
+        booking_id: returnData.booking_id || returnData.bookingId,
+        delivery_id: returnData.delivery_id || returnData.deliveryId,
+        item_condition: condition,
+        damage_notes: damageNotes,
       }
 
-      await processReturn(Number(returnId), payload)
+      await processReturn(payload)
 
       alert("Return processed successfully!")
       onSuccess?.()
@@ -136,7 +138,7 @@ export function ReturnForm({ returnId, onSuccess, onCancel }: ReturnFormProps) {
                 onChange={(e) => setDamageNotes(e.target.value)}
                 placeholder="Describe the damage, affected areas, etc."
                 className="w-full min-h-24 p-2 border rounded-md"
-                required={condition !== "Good"}
+                required={true}
               />
             </div>
           )}

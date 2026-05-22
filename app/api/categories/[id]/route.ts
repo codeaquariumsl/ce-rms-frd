@@ -2,8 +2,9 @@ import { query, queryOne } from "@/lib/db"
 import { type NextRequest, NextResponse } from "next/server"
 
 // PUT - Update a category
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { name, description, color, icon } = body
 
@@ -16,7 +17,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $5
        RETURNING *`,
-      [name, description, color, icon, Number.parseInt(params.id)],
+      [name, description, color, icon, Number.parseInt(id)],
     )
 
     if (updated.length === 0) {
@@ -31,9 +32,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE - Remove a category
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const categoryId = Number.parseInt(params.id)
+    const { id } = await params
+    const categoryId = Number.parseInt(id)
 
     // Check if category is in use
     const itemsCount = await queryOne("SELECT COUNT(*) as count FROM inventory_items WHERE category_id = $1", [

@@ -53,7 +53,7 @@ export function CreateIssueForm() {
   const [numberOfDays, setNumberOfDays] = useState(1)
   const [returnDate, setReturnDate] = useState(new Date(new Date().getTime() + 86400000).toISOString().split('T')[0])
   const [paymentStatus, setPaymentStatus] = useState<"unpaid" | "paid">("unpaid")
-  const [selectedItemForSerials, setSelectedItemForSerials] = useState<{ id: string; name: string; availableSerials: any[] } | null>(null)
+  const [selectedItemForSerials, setSelectedItemForSerials] = useState<SelectedItem | null>(null)
   const [showSerialModal, setShowSerialModal] = useState(false)
   const [pendingItemToAdd, setPendingItemToAdd] = useState<string | null>(null)
 

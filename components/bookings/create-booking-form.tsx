@@ -22,7 +22,7 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
   const [loading, setLoading] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [selectedItems, setSelectedItems] = useState<Array<{ id: string; quantity: number; pricingType: "daily" | "weekly" | "monthly" }>>([])
+  const [selectedItems, setSelectedItems] = useState<Array<{ id: number; quantity: number; pricingType: "daily" | "weekly" | "monthly" }>>([])
   const [availabilityError, setAvailabilityError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
@@ -87,7 +87,7 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
     return totalPrice
   }
 
-  const handleAddItem = (itemId: string) => {
+  const handleAddItem = (itemId: number) => {
     const existing = selectedItems.find((i) => i.id === itemId)
     if (existing) {
       setSelectedItems(selectedItems.map((i) => (i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i)))
@@ -96,11 +96,11 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
     }
   }
 
-  const handleRemoveItem = (itemId: string) => {
+  const handleRemoveItem = (itemId: number) => {
     setSelectedItems(selectedItems.filter((i) => i.id !== itemId))
   }
 
-  const handleQuantityChange = (itemId: string, quantity: number) => {
+  const handleQuantityChange = (itemId: number, quantity: number) => {
     if (quantity <= 0) {
       handleRemoveItem(itemId)
     } else {
@@ -108,7 +108,7 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
     }
   }
 
-  const handlePricingTypeChange = (itemId: string, pricingType: "daily" | "weekly" | "monthly") => {
+  const handlePricingTypeChange = (itemId: number, pricingType: "daily" | "weekly" | "monthly") => {
     setSelectedItems(selectedItems.map((i) => (i.id === itemId ? { ...i, pricingType } : i)))
   }
 
@@ -280,7 +280,7 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => handleAddItem(item.id as string)}
+                  onClick={() => handleAddItem(item.id)}
                   className="w-full text-left p-3 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
                 >
                   <div className="font-medium text-primary">{item.name}</div>
@@ -327,14 +327,14 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
                             type="number"
                             min="1"
                             value={selectedItem.quantity}
-                            onChange={(e) => handleQuantityChange(item.id as string, Number.parseInt(e.target.value))}
+                            onChange={(e) => handleQuantityChange(item.id, Number.parseInt(e.target.value))}
                             className="w-16 h-8"
                           />
                         </td>
                         <td className="py-3 px-3">
                           <select
                             value={selectedItem.pricingType}
-                            onChange={(e) => handlePricingTypeChange(item.id as string, e.target.value as "daily" | "weekly" | "monthly")}
+                            onChange={(e) => handlePricingTypeChange(item.id, e.target.value as "daily" | "weekly" | "monthly")}
                             className="border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                           >
                             <option value="daily">Daily</option>
@@ -349,7 +349,7 @@ export function CreateBookingForm({ organizationId, onSuccess, onCancel }: Creat
                             type="button" 
                             variant="destructive" 
                             size="sm" 
-                            onClick={() => handleRemoveItem(item.id as string)}
+                            onClick={() => handleRemoveItem(item.id)}
                           >
                             Remove
                           </Button>

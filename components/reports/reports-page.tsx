@@ -103,7 +103,7 @@ export function ReportsPage({ organizationId }: ReportsPageProps) {
                 {Object.entries(reportData.summary).map(([key, value]) => (
                   <div key={key}>
                     <p className="text-sm text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
-                    <p className="text-2xl font-bold">{value}</p>
+                    <p className="text-2xl font-bold">{String(value)}</p>
                   </div>
                 ))}
               </div>

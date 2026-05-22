@@ -167,7 +167,7 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
 export async function generateIssuePDF(data: IssueReceiptData) {
   try {
     const pdfBytes = await generateIssuePDFBytes(data)
-    const blob = new Blob([pdfBytes], { type: "application/pdf" })
+    const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
     link.download = `issue-${data.issue_number}.pdf`
@@ -185,7 +185,7 @@ export async function generateIssuePDF(data: IssueReceiptData) {
 export async function printIssuePDF(data: IssueReceiptData) {
   try {
     const pdfBytes = await generateIssuePDFBytes(data)
-    const blob = new Blob([pdfBytes], { type: "application/pdf" })
+    const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
     const blobUrl = URL.createObjectURL(blob)
 
     // Locate or dynamically append the hidden print iframe
