@@ -191,6 +191,7 @@ export function IssueHistoryList() {
     let customerPhone = details.customer_phone || "N/A"
     let customerAddress = details.customer_address || ""
     let customerNIC = details.customer_nic || ""
+    let issueAddress = details.issue_address || ""
 
     // Dynamically fetch and merge customer details if missing or N/A
     const customerId = details.customer_id || issue.customer.id
@@ -215,6 +216,7 @@ export function IssueHistoryList() {
       customer_phone: customerPhone,
       customer_address: customerAddress,
       customer_nic: customerNIC,
+      issue_address: issueAddress,
       status: details.status || "Issued",
       issue_date: details.issue_date,
       return_date: details.return_date,

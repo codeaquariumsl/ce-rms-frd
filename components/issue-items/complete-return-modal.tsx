@@ -105,6 +105,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
       let customerPhone = updatedDetails.customer_phone || "N/A"
       let customerAddress = updatedDetails.customer_address || ""
       let customerNIC = updatedDetails.customer_nic || ""
+      let issueAddress = updatedDetails.issue_address || ""
 
       const customerId = updatedDetails.customer_id || issue.customer.id
       if (customerId) {
@@ -128,6 +129,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
         customer_phone: customerPhone,
         customer_address: customerAddress,
         customer_nic: customerNIC,
+        issue_address: issueAddress,
         status: updatedDetails.status || returnStatus,
         issue_date: updatedDetails.issue_date,
         return_date: updatedDetails.return_date,

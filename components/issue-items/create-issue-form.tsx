@@ -56,6 +56,21 @@ export function CreateIssueForm() {
   const [selectedItemForSerials, setSelectedItemForSerials] = useState<SelectedItem | null>(null)
   const [showSerialModal, setShowSerialModal] = useState(false)
   const [pendingItemToAdd, setPendingItemToAdd] = useState<string | null>(null)
+  const [issueAddress, setIssueAddress] = useState("")
+
+  // Prefill issue address when customer is selected
+  useEffect(() => {
+    if (selectedCustomerId) {
+      const customer = customers.find((c) => String(c.id) === String(selectedCustomerId))
+      if (customer && customer.address) {
+        setIssueAddress(customer.address)
+      } else {
+        setIssueAddress("")
+      }
+    } else {
+      setIssueAddress("")
+    }
+  }, [selectedCustomerId, customers])
 
   function calculateReturnDate(issDate: string, days: number) {
     const date = new Date(issDate)
@@ -253,7 +268,8 @@ export function CreateIssueForm() {
           serial_codes: si.serialNumbers
         })),
         notes: "Issued via Issue Form",
-        payment_status: paymentStatus
+        payment_status: paymentStatus,
+        issue_address: issueAddress
       }
 
       const result = await createIssue(payload)
@@ -291,6 +307,7 @@ export function CreateIssueForm() {
         customer_phone: customerPhone,
         customer_address: customerAddress,
         customer_nic: customerNIC,
+        issue_address: issueAddress,
         status: "Issued",
         issue_date: issueDate,
         return_date: returnDate,
@@ -315,6 +332,7 @@ export function CreateIssueForm() {
       // Reset form
       setSelectedItems([])
       setSelectedCustomerId("")
+      setIssueAddress("")
     } catch (error) {
       console.error("Failed to process issue:", error)
       alert("Failed to process issue: " + (error as Error).message)
@@ -385,6 +403,18 @@ export function CreateIssueForm() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                  <Label htmlFor="issue-address" className="text-xs font-medium text-slate-500 uppercase">Issue Address</Label>
+                  <textarea
+                    id="issue-address"
+                    value={issueAddress}
+                    onChange={(e) => setIssueAddress(e.target.value)}
+                    rows={2}
+                    placeholder="Enter issue address..."
+                    className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-slate-50/50 resize-none font-medium text-slate-800"
+                  />
                 </div>
               </div>
             </div>

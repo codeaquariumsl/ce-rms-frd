@@ -26,6 +26,7 @@ export interface IssueReceiptData {
   notes?: string
   customer_address?: string
   customer_nic?: string
+  issue_address?: string
 }
 
 interface IssueReceiptProps {
@@ -98,13 +99,13 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
 
   // 2. Customer Info
   const customerName = data.customer_name || ""
-  const customerAddress = data.customer_address || ""
+  const issueAddress = data.issue_address || ""
   const customerPhone = data.customer_phone || ""
   const customerNIC = data.customer_nic || ""
 
   // Use custom Nirmala font for names and addresses to support Sinhala overlay
   drawText(customerName, 50, 78, 10, customFont)
-  drawText(customerAddress, 50, 83, 10, customFont)
+  drawText(issueAddress, 50, 83, 10, customFont)
   drawText(customerPhone, 50, 88, 10, helveticaBold)
   drawText(customerNIC, 144, 88, 10, helveticaBold)
 
@@ -292,7 +293,7 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
             <p className="text-[#374151]"><span className="font-bold text-slate-500 uppercase text-[10px] tracking-wider block mb-0.5">Customer Name / නම</span> {data.customer_name}</p>
           </div>
           <div>
-            <p className="text-[#374151]"><span className="font-bold text-slate-500 uppercase text-[10px] tracking-wider block mb-0.5">Address / ලිපිනය</span> {data.customer_address || "........................................................................"}</p>
+            <p className="text-[#374151]"><span className="font-bold text-slate-500 uppercase text-[10px] tracking-wider block mb-0.5">Address / ලිපිනය</span> {data.issue_address || "........................................................................"}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
