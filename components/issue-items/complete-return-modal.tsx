@@ -33,6 +33,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
   const [actualReturnDate, setActualReturnDate] = useState('')
   const [returnStatus, setReturnStatus] = useState<'Returned' | 'Returned Damaged'>('Returned')
   const [returnPaymentStatus, setReturnPaymentStatus] = useState<'paid' | 'unpaid'>('paid')
+  const [returnPaymentType, setReturnPaymentType] = useState<'Cash' | 'Credit'>('Cash')
   const [damageNotes, setDamageNotes] = useState('')
   const [activeReturnDetails, setActiveReturnDetails] = useState<any | null>(null)
   const [submittingReturn, setSubmittingReturn] = useState(false)
@@ -42,6 +43,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
       setActualReturnDate(new Date().toISOString().split('T')[0])
       setReturnStatus('Returned')
       setReturnPaymentStatus('paid')
+      setReturnPaymentType('Cash')
       setDamageNotes('')
       setActiveReturnDetails(null)
       loadIssueDetails()
@@ -87,6 +89,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
         status: returnStatus,
         return_date: actualReturnDate,
         payment_status: returnPaymentStatus,
+        payment_type: returnPaymentStatus === 'paid' ? returnPaymentType : null,
         damage_notes: returnStatus === 'Returned Damaged' ? damageNotes : null
       })
 
@@ -135,6 +138,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
         return_date: updatedDetails.return_date,
         total_amount: Number(updatedDetails.total_amount || 0),
         payment_status: updatedDetails.payment_status,
+        payment_type: updatedDetails.payment_type,
         items: itemsWithMappedFields,
         notes: updatedDetails.notes || ""
       }
@@ -215,7 +219,7 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
             </div>
 
             {/* Payment status dropdown */}
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5">
               <Label className="text-xs font-black text-slate-400 uppercase tracking-wider">Payment Settlement Status</Label>
               <select
                 value={returnPaymentStatus}
@@ -224,6 +228,24 @@ export function CompleteReturnModal({ issue, isOpen, onClose, onSuccess }: Compl
               >
                 <option value="paid">Fully Settled (Paid)</option>
                 <option value="unpaid">Outstanding (Unpaid)</option>
+              </select>
+            </div>
+
+            {/* Payment method selection */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-black text-slate-400 uppercase tracking-wider">Payment Method</Label>
+              <select
+                value={returnPaymentType}
+                onChange={(e) => setReturnPaymentType(e.target.value as any)}
+                disabled={returnPaymentStatus !== 'paid'}
+                className={`w-full h-11 border border-slate-200 rounded-xl px-4 text-sm font-semibold transition-all ${
+                  returnPaymentStatus === 'paid' 
+                    ? "text-slate-700 bg-slate-50/50 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
+                    : "text-slate-400 bg-slate-100 cursor-not-allowed"
+                }`}
+              >
+                <option value="Cash">Cash</option>
+                <option value="Credit">Credit</option>
               </select>
             </div>
 

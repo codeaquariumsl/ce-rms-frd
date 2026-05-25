@@ -98,6 +98,7 @@ export interface InventoryItem {
   quantity_delivered: number
   quantity_damaged: number
   serial_numbers?: SerialNumber[]
+  is_have_serial?: number | boolean
   created_at: string
   updated_at: string
 }

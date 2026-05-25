@@ -17,8 +17,6 @@ interface AddInventoryFormProps {
   onCancel?: () => void
 }
 
-// const CATEGORIES_STORAGE_KEY = "rms_categories"
-
 export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel }: AddInventoryFormProps) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
@@ -31,6 +29,7 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
     rental_rate_per_week: "",
     rental_rate_per_month: "",
     quantity: 1,
+    isHaveSerial: false,
     serialNumbers: [""],
   })
 
@@ -49,6 +48,7 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         rental_rate_per_week: editItem.rental_rate_per_week ? String(editItem.rental_rate_per_week) : "",
         rental_rate_per_month: editItem.rental_rate_per_month ? String(editItem.rental_rate_per_month) : "",
         quantity: editItem.quantity_total || 1,
+        isHaveSerial: !!editItem.is_have_serial,
         serialNumbers: editItem.serial_numbers && editItem.serial_numbers.length > 0
           ? editItem.serial_numbers.map(sn => sn.serial_code)
           : [""],
@@ -63,6 +63,7 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         rental_rate_per_week: "",
         rental_rate_per_month: "",
         quantity: 1,
+        isHaveSerial: false,
         serialNumbers: [""],
       })
     }
@@ -88,6 +89,11 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
     try {
       setLoading(true)
 
+      const isHaveSerialVal = formData.isHaveSerial
+      const derivedQuantity = isHaveSerialVal 
+        ? (formData.serialNumbers.filter(sn => sn.trim() !== "").length || 1)
+        : Number(formData.quantity || 1)
+
       if (editItem) {
         // Update existing item
         const updatePayload = {
@@ -98,21 +104,26 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
           rental_rate_per_day: Number.parseFloat(formData.rental_rate_per_day),
           rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
           rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
+          is_have_serial: isHaveSerialVal,
+          quantity_total: derivedQuantity,
+          quantity_available: Math.max(derivedQuantity - (editItem.quantity_delivered || 0) - (editItem.quantity_reserved || 0), 0)
         }
 
         await updateInventoryItem(editItem.id, updatePayload)
 
-        // Save serial numbers if any changes were made
+        // Save serial numbers if serial numbers are enabled, otherwise delete them (empty payload)
         const originalSerials = editItem.serial_numbers || [];
-        const serialsPayload = formData.serialNumbers
-          .filter(sn => sn.trim() !== "")
-          .map(sn => {
-            const original = originalSerials.find(o => o.serial_code.trim() === sn.trim());
-            return {
-              serial_code: sn.trim(),
-              status: original ? original.status : "Available"
-            };
-          });
+        const serialsPayload = isHaveSerialVal
+          ? formData.serialNumbers
+              .filter(sn => sn.trim() !== "")
+              .map(sn => {
+                const original = originalSerials.find(o => o.serial_code.trim() === sn.trim());
+                return {
+                  serial_code: sn.trim(),
+                  status: original ? original.status : "Available"
+                };
+              })
+          : [];
 
         await saveItemSerials(editItem.id, serialsPayload)
 
@@ -130,21 +141,25 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
           rental_rate_per_day: Number.parseFloat(formData.rental_rate_per_day),
           rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
           rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
+          is_have_serial: isHaveSerialVal,
+          quantity_total: derivedQuantity
         }
 
         const newItem = await createInventoryItem(itemPayload)
         const newItemId = newItem?.id || newItem?.data?.id
 
-        // Save serial numbers for new item
-        const serialsPayload = formData.serialNumbers
-          .filter(sn => sn.trim() !== "")
-          .map(sn => ({
-            serial_code: sn.trim(),
-            status: "Available"
-          }));
+        // Save serial numbers for new item if enabled
+        if (isHaveSerialVal && newItemId) {
+          const serialsPayload = formData.serialNumbers
+            .filter(sn => sn.trim() !== "")
+            .map(sn => ({
+              serial_code: sn.trim(),
+              status: "Available"
+            }));
 
-        if (serialsPayload.length > 0 && newItemId) {
-          await saveItemSerials(newItemId, serialsPayload)
+          if (serialsPayload.length > 0) {
+            await saveItemSerials(newItemId, serialsPayload)
+          }
         }
       }
 
@@ -157,6 +172,7 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         rental_rate_per_week: "",
         rental_rate_per_month: "",
         quantity: 1,
+        isHaveSerial: false,
         serialNumbers: [""],
       })
 
@@ -256,6 +272,40 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
               placeholder="0.00"
             />
           </div>
+
+          {/* Switch toggle for Has Serial Numbers */}
+          <div className="flex items-center space-x-2.5 p-3.5 border border-slate-200 bg-slate-50/50 rounded-xl md:col-span-2 hover:border-slate-300 transition-all cursor-pointer">
+            <input
+              type="checkbox"
+              id="isHaveSerial"
+              name="isHaveSerial"
+              checked={formData.isHaveSerial}
+              onChange={(e) => setFormData(prev => ({ ...prev, isHaveSerial: e.target.checked }))}
+              className="w-5 h-5 rounded text-primary focus:ring-primary border-slate-300 cursor-pointer"
+            />
+            <Label htmlFor="isHaveSerial" className="flex-1 cursor-pointer select-none">
+              <span className="font-extrabold text-slate-800 text-sm">Has Serial Numbers?</span>
+              <p className="text-xs text-muted-foreground mt-0.5">Toggle on if this equipment has individual unique serial barcodes.</p>
+            </Label>
+          </div>
+
+          {/* Conditional Quantity Field (Only if isHaveSerial is false) */}
+          {!formData.isHaveSerial && (
+            <div className="space-y-2 md:col-span-2 animate-in slide-in-from-top-1 duration-200">
+              <Label htmlFor="quantity">Total Stock Quantity *</Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                min="1"
+                value={formData.quantity}
+                onChange={handleChange}
+                placeholder="e.g., 10"
+                required
+                className="border-slate-200 focus:ring-primary h-11"
+              />
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -270,58 +320,60 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
           />
         </div>
 
-        {/* Serial Numbers Section */}
-        <div className="border-t pt-4 mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-primary">Serial Numbers</h3>
-            <Button
-              type="button"
-              size="sm"
-              className="bg-primary hover:bg-primary/90"
-              onClick={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  serialNumbers: [...prev.serialNumbers, ""],
-                }))
-              }
-            >
-              + Add Serial
-            </Button>
-          </div>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {formData.serialNumbers.map((serial, idx) => (
-              <div key={idx} className="flex gap-2">
-                <Input
-                  type="text"
-                  value={serial}
-                  onChange={(e) => {
-                    const updated = [...formData.serialNumbers]
-                    updated[idx] = e.target.value
-                    setFormData((prev) => ({ ...prev, serialNumbers: updated }))
-                  }}
-                  placeholder={`Serial #${idx + 1} (e.g., SN-001)`}
-                  className="border-blue-200 focus:ring-primary"
-                />
-                {formData.serialNumbers.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      const updated = formData.serialNumbers.filter((_, i) => i !== idx)
+        {/* Conditional Serial Numbers Section (Only if isHaveSerial is true) */}
+        {formData.isHaveSerial && (
+          <div className="border-t pt-4 mt-6 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-primary">Serial Numbers</h3>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    serialNumbers: [...prev.serialNumbers, ""],
+                  }))
+                }
+              >
+                + Add Serial
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {formData.serialNumbers.map((serial, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={serial}
+                    onChange={(e) => {
+                      const updated = [...formData.serialNumbers]
+                      updated[idx] = e.target.value
                       setFormData((prev) => ({ ...prev, serialNumbers: updated }))
                     }}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
-            ))}
+                    placeholder={`Serial #${idx + 1} (e.g., SN-001)`}
+                    className="border-blue-200 focus:ring-primary"
+                  />
+                  {formData.serialNumbers.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const updated = formData.serialNumbers.filter((_, i) => i !== idx)
+                        setFormData((prev) => ({ ...prev, serialNumbers: updated }))
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Total Serial Numbers: {formData.serialNumbers.filter(s => s.trim()).length}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Total Serial Numbers: {formData.serialNumbers.filter(s => s.trim()).length}
-          </p>
-        </div>
+        )}
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>

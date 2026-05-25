@@ -25,6 +25,7 @@ interface InventoryItem {
   category: string
   quantity_available: number
   rental_rate_per_day?: number
+  is_have_serial?: number | boolean
 }
 
 interface SelectedItem {
@@ -42,6 +43,7 @@ interface ItemWithSerials {
   quantity_available: number
   rental_rate_per_day?: number
   serial_numbers?: Array<{ id: string; serial_code: string; status: string }>
+  is_have_serial?: number | boolean
 }
 
 export function CreateIssueForm() {
@@ -574,23 +576,29 @@ export function CreateIssueForm() {
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex flex-col gap-1.5 items-center">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedItemForSerials(si)
-                                  setShowSerialModal(true)
-                                }}
-                                className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider transition-all ${si.serialNumbers.length > 0
-                                  ? "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
-                                  : "border-slate-200 text-slate-400 hover:text-slate-600"
-                                  }`}
-                              >
-                                {si.serialNumbers.length > 0
-                                  ? `${si.serialNumbers.length} Serial(s)`
-                                  : "Assign Serials"}
-                              </Button>
+                              {item?.is_have_serial ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedItemForSerials(si)
+                                    setShowSerialModal(true)
+                                  }}
+                                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider transition-all ${si.serialNumbers.length > 0
+                                    ? "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                                    : "border-slate-200 text-slate-400 hover:text-slate-600"
+                                    }`}
+                                >
+                                  {si.serialNumbers.length > 0
+                                    ? `${si.serialNumbers.length} Serial(s)`
+                                    : "Assign Serials"}
+                                </Button>
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">
+                                  Bulk Item
+                                </span>
+                              )}
                               <select
                                 value={si.condition}
                                 onChange={(e) => handleConditionChange(si.id, e.target.value)}

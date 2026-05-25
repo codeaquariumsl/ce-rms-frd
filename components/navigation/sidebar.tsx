@@ -39,11 +39,11 @@ const navigationItems = [
   //   title: "Deliveries",
   //   href: "/delivery",
   // },
-  {
-    icon: RotateCcw,
-    title: "Returns",
-    href: "/returns",
-  },
+  // {
+  //   icon: RotateCcw,
+  //   title: "Returns",
+  //   href: "/returns",
+  // },
   {
     icon: BarChart3,
     title: "Reports",

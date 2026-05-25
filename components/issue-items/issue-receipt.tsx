@@ -15,6 +15,7 @@ export interface IssueReceiptData {
   return_date: string
   total_amount: string | number
   payment_status: "unpaid" | "paid"
+  payment_type?: "Cash" | "Credit"
   items: Array<{
     id: number
     name: string
@@ -32,6 +33,34 @@ export interface IssueReceiptData {
 interface IssueReceiptProps {
   data: IssueReceiptData
   onBack?: () => void
+}
+
+/**
+ * Helper to unroll items with multiple serial numbers into individual records of quantity 1
+ */
+function unrollItems(items: Array<{
+  id: number
+  name: string
+  quantity: number
+  price: string | number
+  serial_codes?: string[]
+  sku?: string
+}>) {
+  const result: typeof items = []
+  for (const item of items) {
+    if (item.serial_codes && item.serial_codes.length > 0) {
+      item.serial_codes.forEach((code) => {
+        result.push({
+          ...item,
+          quantity: 1,
+          serial_codes: [code]
+        })
+      })
+    } else {
+      result.push(item)
+    }
+  }
+  return result
 }
 
 /**
@@ -89,9 +118,11 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
   // 1. Header Metadata
   const fullIssueNum = data.issue_number || `ISS-${data.id}`
 
-  const issueDateObj = new Date(data.issue_date || Date.now())
-  const dateStr = issueDateObj.toISOString().split("T")[0]
-  const timeStr = issueDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+  const issueDateObj = new Date(data.issue_date)
+  const currentDateObj = new Date(Date.now())
+  const issuedateStr = issueDateObj.toISOString().split("T")[0]
+  const dateStr = currentDateObj.toISOString().split("T")[0]
+  const timeStr = currentDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
 
   drawText(fullIssueNum, 25, 30, 10, helveticaBold)
   drawText(dateStr, 160, 59, 9, helveticaBold)
@@ -115,11 +146,12 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
   const numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1
 
-  const items = data.items.slice(0, 12)
+  const unrolled = unrollItems(data.items)
+  const items = unrolled.slice(0, 12)
   items.forEach((item, idx) => {
     const y_row = 108 + idx * 6
 
-    drawText(dateStr, 32, y_row, 8, helveticaFont, "center")
+    drawText(issuedateStr, 32, y_row, 8, helveticaFont, "center")
     drawText(String(item.quantity), 52, y_row, 9, helveticaBold, "center")
 
     // Auto-detect Sinhala Unicode characters in item names to pick appropriate font
@@ -135,30 +167,38 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
 
     const priceNum = Number(item.price || 0)
     drawText(priceNum.toFixed(2), 122, y_row, 9, helveticaFont, "right")
-    drawText(String(numberOfDays), 137, y_row, 9, helveticaFont, "center")
-
-    const subtotal = priceNum * item.quantity * numberOfDays
-    drawText(subtotal.toFixed(2), 166, y_row, 9, helveticaBold, "right")
-
-    const retDateStr = new Date(data.return_date).toISOString().split("T")[0]
-    drawText(retDateStr, 181.5, y_row, 8, helveticaFont, "center")
+    if (data.status === "Returned") {
+      drawText(String(numberOfDays), 137, y_row, 9, helveticaFont, "center")
+    }
+    if (data.status === "Returned") {
+      const subtotal = priceNum * item.quantity * numberOfDays
+      drawText(subtotal.toFixed(2), 166, y_row, 9, helveticaBold, "right")
+    }
+    if (data.status === "Returned") {
+      const retDateStr = new Date(data.return_date).toISOString().split("T")[0]
+      drawText(retDateStr, 181.5, y_row, 8, helveticaFont, "center")
+    }
   })
 
   // 4. Totals Summary
   const grandTotal = Number(data.total_amount || 0)
-  drawText(grandTotal.toFixed(2), 165.5, 178, 10, helveticaBold, "right")
-  drawText("0.00", 165.5, 184, 10, helveticaFont, "right")
-  drawText(grandTotal.toFixed(2), 165.5, 190, 10, helveticaBold, "right")
-
+  if (data.status === "Returned") {
+    drawText(grandTotal.toFixed(2), 165.5, 178, 10, helveticaBold, "right")
+    drawText("0.00", 165.5, 184, 10, helveticaFont, "right")
+    drawText((data.payment_status === "paid") ? "0.00" : grandTotal.toFixed(2), 165.5, 190, 10, helveticaBold, "right")
+  }
   // Checkboxes
   // Box 1: Items Taken ("භාණ්ඩ රැගෙන ආවා")
-  if (data.status === "Returned" || data.status === "Returned Damaged") {
+  if (data.status === "Returned") {
     drawText("X", 73, 184, 12, helveticaBold, "center")
   }
 
   // Box 2: Paid Status ("මුදල් ගෙව්වා / Paid")
   if (data.payment_status === "paid") {
     drawText("X", 73, 190, 12, helveticaBold, "center")
+    if (data.payment_type) {
+      drawText(`(${data.payment_type})`, 82, 190, 9, helveticaBold)
+    }
   }
 
   return await pdfDoc.save()
@@ -224,6 +264,8 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
   const endDate = new Date(data.return_date)
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
   const numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1
+
+  const unrolledItemsList = unrollItems(data.items)
 
   async function handlePrint() {
     await printIssuePDF(data)
@@ -320,7 +362,7 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
               </tr>
             </thead>
             <tbody>
-              {data.items.map((item, idx) => (
+              {unrolledItemsList.map((item, idx) => (
                 <tr key={idx} className="border-b border-[#1f2937] hover:bg-slate-50/50">
                   <td className="border-r border-[#1f2937] p-2 text-center font-medium">{idx + 1}</td>
                   <td className="border-r border-[#1f2937] p-2 text-center text-xs font-bold">{item.quantity}</td>
@@ -340,7 +382,7 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
                   </td>
                 </tr>
               ))}
-              {[...Array(Math.max(0, 5 - data.items.length))].map((_, idx) => (
+              {[...Array(Math.max(0, 5 - unrolledItemsList.length))].map((_, idx) => (
                 <tr key={`empty-${idx}`} className="border-b border-[#1f2937] h-8 bg-slate-50/10">
                   <td className="border-r border-[#1f2937] p-1"></td>
                   <td className="border-r border-[#1f2937] p-1"></td>
@@ -374,7 +416,7 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
         </div>
 
         {/* Payment Status Checkboxes */}
-        <div className="mb-6 space-y-2 text-xs border-t border-slate-100 pt-4">
+        <div className="mb-6 space-y-3 text-xs border-t border-slate-100 pt-4">
           <div className="flex gap-6 justify-center">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -395,6 +437,11 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
               <span className="font-bold text-slate-700">මුදල් ගෙව්වා / Paid</span>
             </label>
           </div>
+          {data.payment_status === "paid" && data.payment_type && (
+            <div className="text-center font-bold text-slate-700 mt-2 bg-slate-50 border border-slate-200 py-1.5 px-4 rounded-lg inline-block mx-auto max-w-xs block">
+              ගෙවීම් ක්‍රමය / Payment Method: <span className="text-primary font-black uppercase">{data.payment_type}</span>
+            </div>
+          )}
         </div>
 
         {/* Signature Section */}
