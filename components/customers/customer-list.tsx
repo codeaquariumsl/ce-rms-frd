@@ -15,6 +15,7 @@ interface Customer {
   email?: string
   phone: string
   address: string
+  photo?: string
   createdAt: string
 }
 
@@ -69,14 +70,29 @@ export function CustomerList({ onEdit, onDelete }: CustomerListProps) {
       <div className='grid gap-4'>
         {filtered.map((customer) => (
           <Card key={customer.id} className='p-4 border border-blue-100 hover:shadow-md transition-shadow'>
-            <div className='flex justify-between items-start'>
-              <div className='flex-1'>
-                <div className='font-semibold text-lg text-primary'>{customer.name}</div>
-                <div className='grid grid-cols-2 gap-2 mt-2 text-sm text-muted-foreground'>
-                  <p>NIC: <span className='font-medium text-foreground'>{customer.nic}</span></p>
-                  <p>Phone: <span className='font-medium text-foreground'>{customer.phone}</span></p>
-                  <p>Email: <span className='font-medium text-foreground'>{customer.email || 'N/A'}</span></p>
-                  <p>Address: <span className='font-medium text-foreground'>{customer.address}</span></p>
+            <div className='flex justify-between items-start gap-4'>
+              <div className='flex items-center gap-4 flex-1'>
+                {/* Customer Photo Avatar */}
+                {customer.photo ? (
+                  <img 
+                    src={customer.photo} 
+                    alt={customer.name} 
+                    className='w-16 h-16 rounded-full object-cover border-2 border-primary/20 bg-slate-50 shadow-sm'
+                  />
+                ) : (
+                  <div className='w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 text-primary font-bold text-lg uppercase select-none shadow-inner'>
+                    {customer.name.slice(0, 2)}
+                  </div>
+                )}
+
+                <div className='flex-1'>
+                  <div className='font-semibold text-lg text-primary'>{customer.name}</div>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-1.5 text-xs sm:text-sm text-muted-foreground'>
+                    <p>NIC: <span className='font-medium text-foreground'>{customer.nic}</span></p>
+                    <p>Phone: <span className='font-medium text-foreground'>{customer.phone}</span></p>
+                    <p>Email: <span className='font-medium text-foreground'>{customer.email || 'N/A'}</span></p>
+                    <p>Address: <span className='font-medium text-foreground'>{customer.address}</span></p>
+                  </div>
                 </div>
               </div>
               <DropdownMenu>

@@ -45,12 +45,14 @@ export interface User {
 export interface Customer {
   id: number
   organization_id: number
+  nic: string
   name: string
   email?: string
   phone: string
   address?: string
   city?: string
   country?: string
+  photo?: string
   registration_date: string
   created_at: string
   updated_at: string
