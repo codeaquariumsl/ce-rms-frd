@@ -7,35 +7,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 export default function IssueItemsPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="w-full mx-auto p-2 md:p-6 space-y-2">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Issue Management</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Streamlined direct-to-customer equipment issuance and tracking.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-100">
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Live System</span>
-          </div>
-        </header>
+      <div className="w-full mx-auto p-3 md:p-4 space-y-3">
+        <Tabs defaultValue="create" className="w-full space-y-3">
+          <div className="flex items-center justify-between gap-4 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <TabsList className="bg-slate-100 p-0.5 rounded-lg border-0 inline-flex">
+              <TabsTrigger
+                value="create"
+                className="px-4 py-1.5 text-xs font-bold rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
+              >
+                Direct Issue
+              </TabsTrigger>
+              <TabsTrigger
+                value="history"
+                className="px-4 py-1.5 text-xs font-bold rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
+              >
+                Issue Logs
+              </TabsTrigger>
+            </TabsList>
 
-        <Tabs defaultValue="create" className="w-full space-y-4">
-          <TabsList className="bg-white p-1 rounded-xl border border-slate-200 shadow-sm inline-flex">
-            <TabsTrigger
-              value="create"
-              className="px-6 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-200"
-            >
-              Direct Issue
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="px-6 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-200"
-            >
-              Issue Logs
-            </TabsTrigger>
-          </TabsList>
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100 shrink-0 select-none">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">System Live</span>
+            </div>
+          </div>
 
           <TabsContent value="create" className="focus-visible:outline-none">
             <CreateIssueForm />

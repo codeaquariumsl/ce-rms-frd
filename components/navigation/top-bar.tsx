@@ -33,6 +33,9 @@ export function TopBar() {
       "/returns": "Returns",
       "/reports": "Reports",
       "/barcode": "Barcodes",
+      "/issue-items": "Issue Items",
+      "/customers": "Customers",
+      "/accounting": "Accounting",
     }
     return routes[pathname as keyof typeof routes] || "Page"
   }

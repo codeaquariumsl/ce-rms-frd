@@ -73,6 +73,11 @@ export {
   getPendingReturnsReport,
   getRentalHistoryReport,
   getCustomerIssuesReport,
+  getDailyIssuesReport,
+  getDailyReturnsReport,
+  getDailyPaymentsReport,
+  getMonthlyCollectionsReport,
+  getCurrentStockReport,
 
   // Barcode
   scanBarcode,

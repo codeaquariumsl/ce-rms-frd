@@ -357,6 +357,31 @@ export async function getCustomerIssuesReport(orgId: number) {
   return json
 }
 
+export async function getDailyIssuesReport(orgId: number) {
+  const json = await get("/reports/daily-issues", { org_id: orgId })
+  return json
+}
+
+export async function getDailyReturnsReport(orgId: number) {
+  const json = await get("/reports/daily-returns", { org_id: orgId })
+  return json
+}
+
+export async function getDailyPaymentsReport(orgId: number) {
+  const json = await get("/reports/daily-payments", { org_id: orgId })
+  return json
+}
+
+export async function getMonthlyCollectionsReport(orgId: number) {
+  const json = await get("/reports/monthly-collections", { org_id: orgId })
+  return json
+}
+
+export async function getCurrentStockReport(orgId: number) {
+  const json = await get("/reports/current-stock", { org_id: orgId })
+  return json
+}
+
 // ─── Barcode ─────────────────────────────────────────────────────────────────
 
 export async function scanBarcode(barcode: string, action?: string) {

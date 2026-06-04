@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { IssueReceipt } from "./issue-receipt"
 import { SerialSelectionModal } from "./serial-selection-modal"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Search, Trash2 } from "lucide-react"
 import { getCustomers, getInventoryItems, createBooking, checkAvailability, createIssue, getCustomerById } from "@/lib/db"
 import { generateIssuePDF, printIssuePDF, type IssueReceiptData } from "./issue-receipt"
 
@@ -59,6 +59,7 @@ export function CreateIssueForm() {
   const [showSerialModal, setShowSerialModal] = useState(false)
   const [pendingItemToAdd, setPendingItemToAdd] = useState<string | null>(null)
   const [issueAddress, setIssueAddress] = useState("")
+  const [catalogSearch, setCatalogSearch] = useState("")
 
   // Prefill issue address when customer is selected
   useEffect(() => {
@@ -342,61 +343,67 @@ export function CreateIssueForm() {
   }
 
 
+  // Filter inventory based on search input
+  const filteredInventory = inventory.filter((item) =>
+    item.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+    item.category.toLowerCase().includes(catalogSearch.toLowerCase())
+  )
+
   return (
     <div className="space-y-2">
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-4 animate-in fade-in duration-200">
         <div className="lg:col-span-4 space-y-2">
           {/* Metadata: Date & Customer */}
-          <Card className="p-5 border-slate-200 shadow-sm rounded-2xl bg-white space-y-2">
+          <Card className="p-3 border-slate-200 shadow-sm rounded-xl bg-white space-y-2">
             <div>
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <span className="w-1.5 h-4 bg-primary rounded-full" />
+              <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <span className="w-1 h-3 bg-primary rounded-full" />
                 Issue Parameters
               </h3>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="issue-date" className="text-xs font-medium text-slate-500 uppercase">Issue Date</Label>
+              <div className="space-y-2">
+                {/* 3-Column Dates Grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="issue-date" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Issue Date</Label>
                     <Input
                       id="issue-date"
                       type="date"
                       value={issueDate}
                       onChange={(e) => handleIssueeDateChange(e.target.value)}
-                      className="h-9 text-sm border-slate-200 focus:border-primary transition-colors"
+                      className="h-8 px-1.5 text-xs border-slate-200 focus-visible:ring-1 focus-visible:ring-primary rounded-lg transition-all"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="days" className="text-xs font-medium text-slate-500 uppercase">Duration (Days)</Label>
+                  <div className="space-y-1">
+                    <Label htmlFor="days" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Days</Label>
                     <Input
                       id="days"
                       type="number"
                       min="1"
                       value={numberOfDays}
                       onChange={(e) => handleNumberOfDaysChange(parseInt(e.target.value) || 1)}
-                      className="h-9 text-sm border-slate-200 focus:border-primary transition-colors"
+                      className="h-8 px-1.5 text-xs border-slate-200 focus-visible:ring-1 focus-visible:ring-primary rounded-lg transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="return-date" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Return Date</Label>
+                    <Input
+                      id="return-date"
+                      type="date"
+                      value={returnDate}
+                      onChange={(e) => handleReturnDateChange(e.target.value)}
+                      className="h-8 px-1.5 text-xs border-slate-200 focus-visible:ring-1 focus-visible:ring-primary rounded-lg transition-all"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="return-date" className="text-xs font-medium text-slate-500 uppercase">Estimated Return</Label>
-                  <Input
-                    id="return-date"
-                    type="date"
-                    value={returnDate}
-                    onChange={(e) => handleReturnDateChange(e.target.value)}
-                    className="h-9 text-sm border-slate-200 focus:border-primary transition-colors"
-                  />
-                </div>
-
-                <div className="pt-2 border-t border-slate-100">
-                  <Label htmlFor="customer" className="text-xs font-medium text-slate-500 uppercase mb-2 block">Select Customer</Label>
+                <div className="pt-2 border-t border-slate-100 space-y-1">
+                  <Label htmlFor="customer" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Select Customer</Label>
                   <select
                     id="customer"
                     value={selectedCustomerId}
                     onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-slate-50/50"
+                    className="w-full h-8.5 border border-slate-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-all bg-slate-50/50"
                   >
                     <option value="">Select a customer</option>
                     {customers.map((customer) => (
@@ -407,117 +414,138 @@ export function CreateIssueForm() {
                   </select>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                  <Label htmlFor="issue-address" className="text-xs font-medium text-slate-500 uppercase">Issue Address</Label>
+                <div className="pt-2 border-t border-slate-100 space-y-1">
+                  <Label htmlFor="issue-address" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Issue Address</Label>
                   <textarea
                     id="issue-address"
                     value={issueAddress}
                     onChange={(e) => setIssueAddress(e.target.value)}
-                    rows={2}
+                    rows={1.5}
                     placeholder="Enter issue address..."
-                    className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-slate-50/50 resize-none font-medium text-slate-800"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all bg-slate-50/50 resize-none font-medium text-slate-800 h-11"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Payment</h3>
-              <div className="grid grid-cols-2 gap-2">
+            {/* Segmented Payment Toggle */}
+            <div className="border-t border-slate-100 space-y-1.5">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Status</h3>
+              <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-lg">
                 <button
                   type="button"
                   onClick={() => setPaymentStatus("unpaid")}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${paymentStatus === "unpaid"
-                    ? "border-amber-200 bg-amber-50 text-amber-700 ring-2 ring-amber-200/20"
-                    : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                  className={`py-1 rounded-md text-[10px] font-black uppercase transition-all duration-200 ${paymentStatus === "unpaid"
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-200/50"
                     }`}
                 >
-                  <span className="text-xs font-bold uppercase">Unpaid</span>
+                  Unpaid
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentStatus("paid")}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${paymentStatus === "paid"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-200/20"
-                    : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                  className={`py-1 rounded-md text-[10px] font-black uppercase transition-all duration-200 ${paymentStatus === "paid"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-200/50"
                     }`}
                 >
-                  <span className="text-xs font-bold uppercase">Paid</span>
+                  Paid
                 </button>
               </div>
             </div>
           </Card>
 
-          {/* Catalog Selection */}
-          <Card className="p-5 border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden flex flex-col h-[400px]">
-            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-4 bg-primary rounded-full" />
-              Item Catalog
-            </h3>
-            <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {inventory.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleAddItem(item.id as string)}
-                  className="w-full text-left p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50 hover:border-blue-200 transition-all group relative overflow-hidden"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-semibold text-slate-900 group-hover:text-primary transition-colors text-sm">{item.name}</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.category}</div>
+          {/* Catalog Selection with Search */}
+          <Card className="p-3 border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden flex flex-col h-[350px] space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-1 h-3 bg-primary rounded-full" />
+                Item Catalog
+              </h3>
+              <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                {filteredInventory.length} Available
+              </span>
+            </div>
+
+            {/* Catalog Live Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Quick search equipment..."
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+                className="h-8 pl-8 text-xs border-slate-200 rounded-lg focus-visible:ring-1 focus-visible:ring-primary bg-slate-50/50"
+              />
+            </div>
+
+            <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+              {filteredInventory.length > 0 ? (
+                filteredInventory.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleAddItem(item.id as string)}
+                    className="w-full text-left p-2 rounded-lg border border-slate-100 bg-slate-50/30 hover:bg-primary/[0.03] hover:border-primary/20 transition-all group flex items-center justify-between gap-2"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-slate-800 group-hover:text-primary transition-colors text-xs truncate">{item.name}</div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight">{item.category}</span>
+                        <span className="text-[10px] text-slate-300 select-none">•</span>
+                        <div className={`w-1.5 h-1.5 rounded-full ${item.quantity_available > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        <span className="text-[9px] font-semibold text-slate-500">Qty: {item.quantity_available}</span>
+                      </div>
                     </div>
-                    <div className="bg-white px-2 py-0.5 rounded-full border border-slate-200 text-[10px] font-bold text-slate-600">
-                      LKR {item.rental_rate_per_day}
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all">
+                        LKR {item.rental_rate_per_day}
+                      </span>
                     </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${item.quantity_available > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                      <span className="text-[11px] font-medium text-slate-500">Stock: {item.quantity_available}</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">ADD +</span>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-8 text-xs text-slate-400 font-medium">No inventory matches search</div>
+              )}
             </div>
           </Card>
         </div>
 
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-8 flex flex-col">
           {/* Selected Items List */}
-          <Card className="p-0 border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden flex flex-col h-full min-h-[500px]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-4 bg-primary rounded-full" />
+          <Card className="p-0 border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden flex flex-col h-full min-h-[450px]">
+            <div className="p-3 px-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-1 h-3.5 bg-primary rounded-full" />
                 Selected Items
               </h3>
               {selectedItems.length > 0 && (
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                <div className="text-[10px] font-black text-slate-500 uppercase bg-white px-2.5 py-1 rounded-full border border-slate-200 shadow-sm">
                   {selectedItems.length} {selectedItems.length === 1 ? 'Item' : 'Items'}
                 </div>
               )}
             </div>
 
-            <div className="flex-1 overflow-x-auto">
+            <div className="flex-1 overflow-y-auto">
               {selectedItems.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center p-12 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                    <span className="text-2xl text-slate-300">🛒</span>
+                <div className="h-full flex flex-col items-center justify-center p-10 text-center">
+                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-slate-100">
+                    <span className="text-lg text-slate-400">🛒</span>
                   </div>
-                  <p className="text-slate-400 font-medium">Your selection is empty</p>
-                  <p className="text-xs text-slate-400 mt-1">Add items from the catalog on the left to get started.</p>
+                  <p className="text-slate-500 text-xs font-bold">Your selection is empty</p>
+                  <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] mx-auto">Add equipment from the catalog on the left to build the issuance record.</p>
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-left">
-                      <th className="py-4 px-6 border-b border-slate-100">Equipment</th>
-                      <th className="py-4 px-4 border-b border-slate-100 text-center">Qty</th>
-                      <th className="py-4 px-4 border-b border-slate-100 text-right">Rate</th>
-                      <th className="py-4 px-4 border-b border-slate-100 text-right">Subtotal</th>
-                      <th className="py-4 px-4 border-b border-slate-100 text-center">Configuration</th>
-                      <th className="py-4 px-6 border-b border-slate-100 text-right">Action</th>
+                    <tr className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest text-left border-b border-slate-100">
+                      <th className="py-2.5 px-4">Equipment</th>
+                      <th className="py-2.5 px-3 text-center">Qty</th>
+                      <th className="py-2.5 px-3 text-right">Daily Rate</th>
+                      <th className="py-2.5 px-3 text-right">Subtotal</th>
+                      <th className="py-2.5 px-3 text-center">Configuration</th>
+                      <th className="py-2.5 px-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -525,57 +553,51 @@ export function CreateIssueForm() {
                       const item = inventory.find((i) => i.id === si.id) as ItemWithSerials
                       const itemTotal = si.price * si.quantity * numberOfDays
                       return (
-                        <tr key={si.id} className="group hover:bg-slate-50/50 transition-colors">
-                          <td className="py-4 px-6">
-                            <div className="font-semibold text-slate-900 text-sm">{item?.name}</div>
-                            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">{item?.category}</div>
+                        <tr key={si.id} className="group hover:bg-slate-50/40 transition-colors">
+                          <td className="py-2 px-4">
+                            <div className="font-bold text-slate-800 text-xs truncate max-w-[180px]">{item?.name}</div>
+                            <div className="text-[8px] text-slate-400 uppercase font-black tracking-tight">{item?.category}</div>
                           </td>
-                          <td className="py-4 px-4">
+                          <td className="py-2 px-3">
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => handleQuantityChange(si.id, si.quantity - 1)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 transition-colors text-slate-400 font-bold"
+                                className="w-5 h-5 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-100 transition-colors text-slate-400 font-bold text-xs"
                               >
                                 -
                               </button>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={si.quantity}
-                                onChange={(e) => handleQuantityChange(si.id, Number.parseInt(e.target.value))}
-                                className="w-10 h-7 text-xs p-0 text-center border-none shadow-none focus-visible:ring-0 font-bold"
-                              />
+                              <span className="w-5 text-center text-xs font-black text-slate-700">{si.quantity}</span>
                               <button
                                 type="button"
                                 onClick={() => handleQuantityChange(si.id, si.quantity + 1)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 transition-colors text-slate-400 font-bold"
+                                className="w-5 h-5 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-100 transition-colors text-slate-400 font-bold text-xs"
                               >
                                 +
                               </button>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-right">
-                            <div className="relative inline-block w-24">
-                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">LKR</span>
+                          <td className="py-2 px-3 text-right">
+                            <div className="relative inline-block w-20">
+                              <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-400">LKR</span>
                               <Input
                                 type="number"
                                 min="0"
                                 step="0.01"
                                 value={si.price}
                                 onChange={(e) => handlePriceChange(si.id, Number.parseFloat(e.target.value) || 0)}
-                                className="h-8 text-xs text-right pl-7 border-slate-200 focus:border-primary font-medium"
+                                className="h-7 text-[11px] text-right pl-6 pr-1 border-slate-200 focus-visible:ring-1 focus-visible:ring-primary rounded font-bold"
                               />
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-right">
-                            <div className="text-sm font-bold text-slate-900">
+                          <td className="py-2 px-3 text-right">
+                            <div className="text-xs font-black text-slate-800">
                               {itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </div>
-                            <div className="text-[10px] font-medium text-slate-400">{numberOfDays} {numberOfDays === 1 ? 'Day' : 'Days'}</div>
+                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{numberOfDays} {numberOfDays === 1 ? 'Day' : 'Days'}</div>
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-col gap-1.5 items-center">
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-1.5 justify-center">
                               {item?.is_have_serial ? (
                                 <Button
                                   type="button"
@@ -585,36 +607,36 @@ export function CreateIssueForm() {
                                     setSelectedItemForSerials(si)
                                     setShowSerialModal(true)
                                   }}
-                                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider transition-all ${si.serialNumbers.length > 0
+                                  className={`h-6 px-1.5 text-[9px] font-black uppercase tracking-wider transition-all rounded ${si.serialNumbers.length > 0
                                     ? "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
                                     : "border-slate-200 text-slate-400 hover:text-slate-600"
                                     }`}
                                 >
                                   {si.serialNumbers.length > 0
-                                    ? `${si.serialNumbers.length} Serial(s)`
-                                    : "Assign Serials"}
+                                    ? `${si.serialNumbers.length} SN`
+                                    : "Add SN"}
                                 </Button>
                               ) : (
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">
-                                  Bulk Item
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded select-none">
+                                  Bulk
                                 </span>
                               )}
                               <select
                                 value={si.condition}
                                 onChange={(e) => handleConditionChange(si.id, e.target.value)}
-                                className="text-[10px] font-bold border-none bg-slate-100 rounded-lg px-2 py-1 text-slate-500 uppercase tracking-tighter focus:ring-0 cursor-pointer hover:bg-slate-200 transition-colors"
+                                className="text-[9px] font-bold border-none bg-slate-100 rounded px-1 py-0.5 text-slate-500 uppercase tracking-tighter focus:ring-0 cursor-pointer hover:bg-slate-200 transition-colors h-6"
                               >
-                                <option value="Good">Good Condition</option>
-                                <option value="Fair">Fair Condition</option>
-                                <option value="Poor">Poor Condition</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
                               </select>
                             </div>
                           </td>
-                          <td className="py-4 px-6 text-right">
+                          <td className="py-2 px-4 text-right">
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(si.id)}
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                              className="w-5 h-5 rounded flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all ml-auto"
                             >
                               ✕
                             </button>
@@ -627,31 +649,31 @@ export function CreateIssueForm() {
               )}
             </div>
 
-            {/* Sticky Summary & Footer */}
-            <div className="p-6 bg-slate-900 border-t border-slate-800">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="flex items-center gap-8">
+            {/* Sticky Compact Checkout Footer */}
+            <div className="p-3 px-4 bg-slate-900 border-t border-slate-800">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="space-y-0.5">
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Grand Total</div>
-                    <div className="text-2xl font-black text-white tracking-tight flex items-baseline gap-1">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">LKR</span>
+                    <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Grand Total</div>
+                    <div className="text-lg font-black text-white tracking-tight flex items-baseline gap-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase mr-0.5 select-none">LKR</span>
                       {getTotalAmount().toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </div>
                   </div>
-                  <div className={`px-4 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-widest transition-all ${paymentStatus === "paid"
+                  <div className={`px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-wider select-none ${paymentStatus === "paid"
                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                     : "bg-amber-500/10 border-amber-500/20 text-amber-400"
                     }`}>
-                    {paymentStatus === "paid" ? "✅ Fully Paid" : "⏳ Unpaid / Pending"}
+                    {paymentStatus === "paid" ? "✓ Paid" : "⏳ Unpaid"}
                   </div>
                 </div>
 
                 <Button
                   type="submit"
                   disabled={!selectedCustomerId || selectedItems.length === 0}
-                  className="w-full md:w-auto px-10 py-6 bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 text-sm font-bold uppercase tracking-widest disabled:opacity-50 disabled:grayscale disabled:shadow-none"
+                  className="w-full sm:w-auto px-5 bg-primary hover:bg-primary/95 text-white rounded-lg shadow-md shadow-primary/10 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:grayscale disabled:shadow-none h-8.5"
                 >
-                  Confirm & Generate Receipt
+                  Confirm & Print Receipt
                 </Button>
               </div>
             </div>
