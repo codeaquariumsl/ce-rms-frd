@@ -54,6 +54,7 @@ export {
   getCustomers,
   getCustomerById,
   createCustomer,
+  updateCustomer,
 
   // Categories
   getCategories,

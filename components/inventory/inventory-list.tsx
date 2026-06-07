@@ -153,97 +153,121 @@ export function InventoryList({ organizationId, onAddItem, onEditItem, onDeleteI
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredItems.map((item) => (
-          <Card key={item.id} className="p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-semibold text-lg">{item.name}</h3>
-                <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                  <span>SKU: {item.sku}</span>
-                  <span>•</span>
-                  <span className="font-medium text-foreground">No of Qty: {item.quantity_total}</span>
+          <Card key={item.id} className="p-5 hover:shadow-md transition-shadow border border-slate-200 flex flex-col justify-between bg-card text-card-foreground">
+            <div className="space-y-3">
+              {/* Header */}
+              <div className="flex justify-between items-start gap-2">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-base leading-snug">{item.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-slate-100">
+                      {item.sku}
+                    </span>
+                  </div>
+                </div>
+                <Badge className={`${getStatusColor(item.status)} font-medium`}>{item.status}</Badge>
+              </div>
+
+              {/* Stock Info */}
+              <div className="grid grid-cols-2 gap-2 p-2 bg-slate-50/50 rounded-lg border border-slate-100 text-xs">
+                <div>
+                  <span className="text-muted-foreground block">Total Stock</span>
+                  <span className="font-bold text-foreground text-sm">{item.quantity_total}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block">Available</span>
+                  <span className="font-bold text-emerald-600 text-sm">{item.quantity_available}</span>
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEditItem?.(item)}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedItemForSerials(item)
-                      setShowSerialModal(true)
-                    }}
-                  >
-                    <Barcode className="w-4 h-4 mr-2" />
-                    Manage Serials
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-red-600">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
 
-            <Badge className={`${getStatusColor(item.status)} mb-3`}>{item.status}</Badge>
+              {/* Rates */}
+              <div className="border border-slate-100 rounded-lg divide-y divide-slate-100 text-xs bg-white">
+                <div className="flex justify-between p-2">
+                  <span className="text-muted-foreground">Rate / Day</span>
+                  <span className="font-semibold text-foreground">LKR {item.rental_rate_per_day}</span>
+                </div>
+                {item.rental_rate_per_week !== null && item.rental_rate_per_week !== undefined && (
+                  <div className="flex justify-between p-2">
+                    <span className="text-muted-foreground">Rate / Week</span>
+                    <span className="font-semibold text-foreground">LKR {item.rental_rate_per_week}</span>
+                  </div>
+                )}
+                {item.rental_rate_per_month !== null && item.rental_rate_per_month !== undefined && (
+                  <div className="flex justify-between p-2">
+                    <span className="text-muted-foreground">Rate / Month</span>
+                    <span className="font-semibold text-foreground">LKR {item.rental_rate_per_month}</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Serial Numbers Info */}
-            {item.serial_numbers && item.serial_numbers.length > 0 && (
-              <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
-                <p className="text-xs font-semibold text-primary mb-1">Serial Numbers: {item.serial_numbers.length}</p>
-                <div className="flex flex-wrap gap-1">
-                  {item.serial_numbers.slice(0, 5).map((sn) => (
-                    <Badge
-                      key={sn.id}
-                      variant="outline"
-                      className={`text-[10px] font-mono ${sn.status === 'Available' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
-                          sn.status === 'Damaged' ? 'border-rose-200 text-rose-700 bg-rose-50' :
-                            'border-slate-200 text-slate-500 bg-slate-50'
+              {/* Serial Numbers Info */}
+              {item.serial_numbers && item.serial_numbers.length > 0 && (
+                <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-100 text-xs">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="font-semibold text-blue-800">Serials ({item.serial_numbers.length})</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 max-h-[64px] overflow-y-auto">
+                    {item.serial_numbers.slice(0, 5).map((sn) => (
+                      <Badge
+                        key={sn.id}
+                        variant="outline"
+                        className={`text-[9px] font-mono leading-none py-0.5 px-1.5 ${
+                          sn.status === 'Available' ? 'border-emerald-200 text-emerald-700 bg-emerald-50/50' :
+                          sn.status === 'Damaged' ? 'border-rose-200 text-rose-700 bg-rose-50/50' :
+                          'border-slate-200 text-slate-500 bg-slate-50/50'
                         }`}
-                    >
-                      {sn.serial_code}
-                      <span className="ml-1 text-[8px] opacity-70">({sn.status})</span>
-                    </Badge>
-                  ))}
-                  {item.serial_numbers.length > 5 && (
-                    <Badge variant="outline" className="text-[10px] bg-white border-slate-200">
-                      +{item.serial_numbers.length - 5} others
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between border-b border-muted pb-1.5 mb-1.5 text-xs text-muted-foreground">
-                <span>Total Serials: {item.quantity_total}</span>
-                <span>Available: {item.quantity_available}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Rate/Day:</span>
-                <span className="font-medium">{item.rental_rate_per_day}</span>
-              </div>
-              {item.rental_rate_per_week && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Rate/Week:</span>
-                  <span className="font-medium">{item.rental_rate_per_week}</span>
+                      >
+                        {sn.serial_code}
+                      </Badge>
+                    ))}
+                    {item.serial_numbers.length > 5 && (
+                      <span className="text-[9px] text-muted-foreground self-center font-medium pl-1">
+                        +{item.serial_numbers.length - 5} more
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
-              {item.rental_rate_per_month && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Rate/Month:</span>
-                  <span className="font-medium">{item.rental_rate_per_month}</span>
-                </div>
+
+              {item.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                  {item.description}
+                </p>
               )}
             </div>
 
-            {item.description && <p className="text-xs text-muted-foreground mt-3 line-clamp-2">{item.description}</p>}
+            {/* Action Buttons */}
+            <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-9 gap-1.5 text-xs"
+                onClick={() => onEditItem?.(item)}
+              >
+                <Edit className="w-3.5 h-3.5" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-9 gap-1.5 text-xs border-blue-200 text-blue-600 hover:bg-blue-50/50 hover:text-blue-700"
+                onClick={() => {
+                  setSelectedItemForSerials(item)
+                  setShowSerialModal(true)
+                }}
+              >
+                <Barcode className="w-3.5 h-3.5" />
+                Manage Serials
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 p-0 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300"
+                onClick={() => handleDelete(item.id)}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </Card>
         ))}
       </div>

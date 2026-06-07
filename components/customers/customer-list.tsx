@@ -16,7 +16,7 @@ interface Customer {
   phone: string
   address: string
   photo?: string
-  createdAt: string
+  registration_date: string
 }
 
 interface CustomerListProps {
@@ -27,6 +27,7 @@ interface CustomerListProps {
 export function CustomerList({ onEdit, onDelete }: CustomerListProps) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [previewPhoto, setPreviewPhoto] = useState<{ url: string; name: string } | null>(null)
 
   useEffect(() => {
     loadCustomers()
@@ -74,10 +75,12 @@ export function CustomerList({ onEdit, onDelete }: CustomerListProps) {
               <div className='flex items-center gap-4 flex-1'>
                 {/* Customer Photo Avatar */}
                 {customer.photo ? (
-                  <img 
-                    src={customer.photo} 
-                    alt={customer.name} 
-                    className='w-16 h-16 rounded-full object-cover border-2 border-primary/20 bg-slate-50 shadow-sm'
+                  <img
+                    src={customer.photo}
+                    alt={customer.name}
+                    className='w-16 h-16 rounded-full object-cover border-2 border-primary/20 bg-slate-50 shadow-sm cursor-pointer hover:opacity-80 transition-opacity'
+                    onClick={() => setPreviewPhoto({ url: customer.photo!, name: customer.name })}
+                    title="Click to view photo"
                   />
                 ) : (
                   <div className='w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 text-primary font-bold text-lg uppercase select-none shadow-inner'>
@@ -120,7 +123,7 @@ export function CustomerList({ onEdit, onDelete }: CustomerListProps) {
               </DropdownMenu>
             </div>
             <p className='text-xs text-muted-foreground mt-2'>
-              Registered: {new Date(customer.createdAt).toLocaleDateString()}
+              Registered: {new Date(customer.registration_date).toLocaleDateString()}
             </p>
           </Card>
         ))}
@@ -129,6 +132,34 @@ export function CustomerList({ onEdit, onDelete }: CustomerListProps) {
       {filtered.length === 0 && (
         <div className='text-center py-12 text-muted-foreground'>
           {customers.length === 0 ? 'No customers yet. Create one to get started!' : 'No customers match your search.'}
+        </div>
+      )}
+
+      {/* Photo Preview Modal */}
+      {previewPhoto && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div 
+            className="relative bg-white p-3.5 rounded-xl max-w-[90vw] max-h-[85vh] shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute -top-3 -right-3 h-8 w-8 rounded-full p-0 border border-slate-200 shadow bg-white hover:bg-slate-50 text-slate-500 font-bold"
+              onClick={() => setPreviewPhoto(null)}
+            >
+              ✕
+            </Button>
+            <img
+              src={previewPhoto.url}
+              alt={previewPhoto.name}
+              className="max-w-full max-h-[70vh] object-contain rounded-lg border border-slate-100"
+            />
+            <p className="text-center font-semibold text-slate-800 text-sm mt-3">{previewPhoto.name}</p>
+          </div>
         </div>
       )}
     </div>

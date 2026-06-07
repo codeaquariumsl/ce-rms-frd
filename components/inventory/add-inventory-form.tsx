@@ -20,6 +20,12 @@ interface AddInventoryFormProps {
 export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel }: AddInventoryFormProps) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  
+  // States for quantity adjustment (in edit mode)
+  const [qtyChangeType, setQtyChangeType] = useState<'in' | 'out' | null>(null)
+  const [qtyChangeAmount, setQtyChangeAmount] = useState<number>(0)
+  const [qtyInputVal, setQtyInputVal] = useState<string>("")
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -31,6 +37,7 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
     quantity: 1,
     isHaveSerial: false,
     serialNumbers: [""],
+    status: "Available",
   })
 
   useEffect(() => {
@@ -52,7 +59,11 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         serialNumbers: editItem.serial_numbers && editItem.serial_numbers.length > 0
           ? editItem.serial_numbers.map(sn => sn.serial_code)
           : [""],
+        status: editItem.status || "Available",
       })
+      setQtyChangeType(null)
+      setQtyChangeAmount(0)
+      setQtyInputVal("")
     } else {
       setFormData({
         name: "",
@@ -65,7 +76,11 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         quantity: 1,
         isHaveSerial: false,
         serialNumbers: [""],
+        status: "Available",
       })
+      setQtyChangeType(null)
+      setQtyChangeAmount(0)
+      setQtyInputVal("")
     }
   }, [editItem])
 
@@ -83,6 +98,36 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleAddQty = () => {
+    const amt = parseInt(String(qtyInputVal), 10)
+    if (isNaN(amt) || amt <= 0) return
+    
+    setFormData(prev => ({
+      ...prev,
+      quantity: prev.quantity + amt
+    }))
+    setQtyChangeType('in')
+    setQtyChangeAmount(prev => prev + amt)
+    setQtyInputVal("")
+  }
+
+  const handleRemoveQty = () => {
+    const amt = parseInt(String(qtyInputVal), 10)
+    if (isNaN(amt) || amt <= 0) return
+    if (formData.quantity - amt < 0) {
+      alert("Cannot remove more than the current total stock!")
+      return
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      quantity: prev.quantity - amt
+    }))
+    setQtyChangeType('out')
+    setQtyChangeAmount(prev => prev + amt)
+    setQtyInputVal("")
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -90,13 +135,13 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
       setLoading(true)
 
       const isHaveSerialVal = formData.isHaveSerial
-      const derivedQuantity = isHaveSerialVal 
+      const derivedQuantity = isHaveSerialVal
         ? (formData.serialNumbers.filter(sn => sn.trim() !== "").length || 1)
         : Number(formData.quantity || 1)
 
       if (editItem) {
         // Update existing item
-        const updatePayload = {
+        const updatePayload: any = {
           name: formData.name,
           description: formData.description,
           category_id: formData.category_id ? Number.parseInt(formData.category_id) : null,
@@ -105,16 +150,26 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
           rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
           rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
           is_have_serial: isHaveSerialVal,
-          quantity_total: derivedQuantity,
-          quantity_available: Math.max(derivedQuantity - (editItem.quantity_delivered || 0) - (editItem.quantity_reserved || 0), 0)
+          status: formData.status,
+        }
+
+        // Apply quantity changes based on UI options
+        if (!isHaveSerialVal && qtyChangeAmount > 0 && qtyChangeType) {
+          updatePayload.quantity_change = qtyChangeAmount
+          updatePayload.in_out = qtyChangeType
+        } else {
+          // If no change, we can send current values
+          updatePayload.quantity_total = derivedQuantity
+          updatePayload.quantity_available = Math.max(derivedQuantity - (editItem.quantity_delivered || 0) - (editItem.quantity_reserved || 0), 0)
         }
 
         await updateInventoryItem(editItem.id, updatePayload)
 
-        // Save serial numbers if serial numbers are enabled, otherwise delete them (empty payload)
-        const originalSerials = editItem.serial_numbers || [];
-        const serialsPayload = isHaveSerialVal
-          ? formData.serialNumbers
+        // Only save serial numbers if currently enabled, or if they were previously enabled and are now disabled (to clear them)
+        if (isHaveSerialVal || editItem.is_have_serial) {
+          const originalSerials = editItem.serial_numbers || [];
+          const serialsPayload = isHaveSerialVal
+            ? formData.serialNumbers
               .filter(sn => sn.trim() !== "")
               .map(sn => {
                 const original = originalSerials.find(o => o.serial_code.trim() === sn.trim());
@@ -123,9 +178,10 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
                   status: original ? original.status : "Available"
                 };
               })
-          : [];
+            : [];
 
-        await saveItemSerials(editItem.id, serialsPayload)
+          await saveItemSerials(editItem.id, serialsPayload)
+        }
 
       } else {
         // Create new item
@@ -142,7 +198,8 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
           rental_rate_per_week: formData.rental_rate_per_week ? Number.parseFloat(formData.rental_rate_per_week) : null,
           rental_rate_per_month: formData.rental_rate_per_month ? Number.parseFloat(formData.rental_rate_per_month) : null,
           is_have_serial: isHaveSerialVal,
-          quantity_total: derivedQuantity
+          quantity_total: derivedQuantity,
+          status: formData.status,
         }
 
         const newItem = await createInventoryItem(itemPayload)
@@ -174,7 +231,11 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
         quantity: 1,
         isHaveSerial: false,
         serialNumbers: [""],
+        status: "Available",
       })
+      setQtyChangeType(null)
+      setQtyChangeAmount(0)
+      setQtyInputVal("")
 
       onSuccess?.()
     } catch (error) {
@@ -230,6 +291,22 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
                   {cat.name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
+            >
+              <option value="Available">Available</option>
+              <option value="Reserved">Reserved</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Damaged">Damaged</option>
             </select>
           </div>
 
@@ -290,7 +367,55 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
           </div>
 
           {/* Conditional Quantity Field (Only if isHaveSerial is false) */}
-          {!formData.isHaveSerial && (
+          {!formData.isHaveSerial && editItem && (
+            <div className="space-y-4 md:col-span-2 p-4 border border-slate-200 bg-slate-50/50 rounded-xl animate-in slide-in-from-top-1 duration-200">
+              <div className="flex justify-between items-center border-b pb-2 mb-2">
+                <span className="text-sm font-semibold text-slate-800">Total Stock Quantity Adjustment</span>
+                <span className="text-xs bg-slate-200 px-2 py-0.5 rounded font-medium text-slate-700">
+                  Current Stock: {formData.quantity}
+                </span>
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="qtyInputVal">Quantity</Label>
+                  <Input
+                    id="qtyInputVal"
+                    type="number"
+                    min="1"
+                    placeholder="Enter qty (e.g., 5)"
+                    value={qtyInputVal}
+                    onChange={(e) => setQtyInputVal(e.target.value)}
+                    className="border-slate-200 focus:ring-primary h-10 bg-white"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 gap-1 font-semibold"
+                    onClick={handleAddQty}
+                  >
+                    + Add Qty
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:text-rose-800 gap-1 font-semibold"
+                    onClick={handleRemoveQty}
+                  >
+                    - Remove Qty
+                  </Button>
+                </div>
+              </div>
+              {qtyChangeAmount > 0 && (
+                <p className="text-[11px] text-blue-600 font-semibold animate-in fade-in duration-200">
+                  Pending adjustment: {qtyChangeType === 'in' ? '+' : '-'}{qtyChangeAmount} units (will be saved when you update the item).
+                </p>
+              )}
+            </div>
+          )}
+
+          {!formData.isHaveSerial && !editItem && (
             <div className="space-y-2 md:col-span-2 animate-in slide-in-from-top-1 duration-200">
               <Label htmlFor="quantity">Total Stock Quantity *</Label>
               <Input
@@ -306,18 +431,6 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
               />
             </div>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Item details, specifications, etc."
-            className="w-full min-h-20 p-2 border rounded-md"
-          />
         </div>
 
         {/* Conditional Serial Numbers Section (Only if isHaveSerial is true) */}
@@ -374,6 +487,18 @@ export function AddInventoryForm({ organizationId, editItem, onSuccess, onCancel
             </p>
           </div>
         )}
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Item details, specifications, etc."
+            className="w-full min-h-20 p-2 border rounded-md"
+          />
+        </div>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>

@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Camera, Upload, X } from 'lucide-react'
-import { createCustomer } from '@/lib/db'
+import { createCustomer, updateCustomer } from '@/lib/db'
 
 interface Customer {
   id: string
@@ -149,8 +149,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel }: CustomerFormP
       }
 
       if (initialData) {
-        // Update not implemented in shim yet
-        console.warn('Update customer not yet supported via API shim')
+        await updateCustomer(Number(initialData.id), payload)
       } else {
         await createCustomer(payload)
       }

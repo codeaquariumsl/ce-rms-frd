@@ -292,6 +292,11 @@ export async function createCustomer(data: any) {
   return json.data ?? json
 }
 
+export async function updateCustomer(id: number, data: any) {
+  const json = await patch(`/customers/${id}`, data)
+  return json.data ?? json
+}
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 export async function getCategories(orgId: number) {
