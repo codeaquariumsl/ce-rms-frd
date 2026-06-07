@@ -63,17 +63,23 @@ export function CreateIssueForm() {
   const [issueAddress, setIssueAddress] = useState("")
   const [catalogSearch, setCatalogSearch] = useState("")
 
-  // Prefill issue address when customer is selected
+  // Searchable customer dropdown states
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false)
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("")
+
+  // Prefill issue address and sync name search when customer is selected
   useEffect(() => {
     if (selectedCustomerId) {
       const customer = customers.find((c) => String(c.id) === String(selectedCustomerId))
-      if (customer && customer.address) {
-        setIssueAddress(customer.address)
+      if (customer) {
+        setIssueAddress(customer.address || "")
+        setCustomerSearchQuery(customer.name)
       } else {
         setIssueAddress("")
       }
     } else {
       setIssueAddress("")
+      setCustomerSearchQuery("")
     }
   }, [selectedCustomerId, customers])
 
@@ -353,6 +359,13 @@ export function CreateIssueForm() {
     item.category?.toLowerCase().includes(catalogSearch.toLowerCase())
   )
 
+  // Filter customers for dropdown search
+  const filteredCustomers = customers.filter((customer) =>
+    customer.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+    customer.nic.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+    customer.phone.includes(customerSearchQuery)
+  )
+
   return (
     <div className="space-y-2">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-4 animate-in fade-in duration-200">
@@ -401,21 +414,86 @@ export function CreateIssueForm() {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 space-y-1">
-                  <Label htmlFor="customer" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Select Customer</Label>
-                  <select
-                    id="customer"
-                    value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="w-full h-8.5 border border-slate-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-all bg-slate-50/50"
-                  >
-                    <option value="">Select a customer</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </option>
-                    ))}
-                  </select>
+                <div className="pt-2 border-t border-slate-100 space-y-1 relative">
+                  <Label htmlFor="customer-search" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Select Customer</Label>
+                  
+                  <div className="relative">
+                    <Input
+                      id="customer-search"
+                      placeholder="Type name, NIC or phone..."
+                      value={customerSearchQuery}
+                      onChange={(e) => {
+                        setCustomerSearchQuery(e.target.value)
+                        setIsCustomerDropdownOpen(true)
+                      }}
+                      onFocus={() => setIsCustomerDropdownOpen(true)}
+                      className="w-full h-8.5 border border-slate-200 rounded-lg px-2.5 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-all bg-slate-50/50"
+                      autoComplete="off"
+                    />
+                    
+                    {selectedCustomerId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCustomerId("")
+                          setIssueAddress("")
+                          setCustomerSearchQuery("")
+                        }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] bg-slate-100 hover:bg-slate-200 rounded-full h-4 w-4 flex items-center justify-center transition-colors"
+                        title="Clear customer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Backdrop overlay to close the dropdown when clicking outside */}
+                  {isCustomerDropdownOpen && (
+                    <div 
+                      className="fixed inset-0 z-40 bg-transparent" 
+                      onClick={() => {
+                        setIsCustomerDropdownOpen(false)
+                        // Restore selection name if any
+                        const selected = customers.find(c => String(c.id) === String(selectedCustomerId))
+                        setCustomerSearchQuery(selected ? selected.name : "")
+                      }} 
+                    />
+                  )}
+
+                  {/* Search Dropdown Options list */}
+                  {isCustomerDropdownOpen && (
+                    <div className="absolute left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg p-1 space-y-0.5 animate-in slide-in-from-top-1 duration-150">
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((customer) => (
+                          <button
+                            key={customer.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomerId(String(customer.id))
+                              setCustomerSearchQuery(customer.name)
+                              setIsCustomerDropdownOpen(false)
+                            }}
+                            className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex flex-col gap-0.5 ${
+                              String(selectedCustomerId) === String(customer.id)
+                                ? "bg-primary text-white"
+                                : "hover:bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            <span className="font-semibold">{customer.name}</span>
+                            <span className={`text-[10px] ${
+                              String(selectedCustomerId) === String(customer.id) ? "text-white/80" : "text-muted-foreground"
+                            }`}>
+                              NIC: {customer.nic} • Phone: {customer.phone}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-2 py-3 text-center text-xs text-muted-foreground italic">
+                          No customers found
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 space-y-1">
@@ -494,12 +572,12 @@ export function CreateIssueForm() {
                     className="w-full text-left p-2 rounded-lg border border-slate-100 bg-slate-50/30 hover:bg-primary/[0.03] hover:border-primary/20 transition-all group flex items-center justify-between gap-2"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-slate-800 group-hover:text-primary transition-colors text-xs truncate">{item.name}</div>
+                      <div className="font-bold text-slate-800 group-hover:text-primary transition-colors text-sm truncate">{item.name}</div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight">{item.sku}</span>
-                        <span className="text-[10px] text-slate-300 select-none">•</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase">{item.sku}</span>
+                        <span className="text-[8px] text-slate-300 select-none">•</span>
                         <div className={`w-1.5 h-1.5 rounded-full ${item.quantity_available > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                        <span className="text-[9px] font-semibold text-slate-500">Qty: {item.quantity_available}</span>
+                        <span className="text-[10px] font-semibold text-slate-500"> Qty: {item.quantity_available}</span>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
