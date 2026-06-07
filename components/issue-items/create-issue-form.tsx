@@ -26,6 +26,8 @@ interface InventoryItem {
   quantity_available: number
   rental_rate_per_day?: number
   is_have_serial?: number | boolean
+  barcode?: string
+  sku?: string
 }
 
 interface SelectedItem {
@@ -346,7 +348,9 @@ export function CreateIssueForm() {
   // Filter inventory based on search input
   const filteredInventory = inventory.filter((item) =>
     item.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
-    item.category.toLowerCase().includes(catalogSearch.toLowerCase())
+    item.sku?.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+    item.barcode?.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+    item.category?.toLowerCase().includes(catalogSearch.toLowerCase())
   )
 
   return (
@@ -492,7 +496,7 @@ export function CreateIssueForm() {
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-slate-800 group-hover:text-primary transition-colors text-xs truncate">{item.name}</div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight">{item.category}</span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight">{item.sku}</span>
                         <span className="text-[10px] text-slate-300 select-none">•</span>
                         <div className={`w-1.5 h-1.5 rounded-full ${item.quantity_available > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         <span className="text-[9px] font-semibold text-slate-500">Qty: {item.quantity_available}</span>
