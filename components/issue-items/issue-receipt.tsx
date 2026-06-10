@@ -93,26 +93,43 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
   const sf = 2.83464567 // 72 pt / 25.4 mm
 
   // Coordinate helper mapping mm from top-left to points from bottom-left
+  // Safe drawText: if the requested font fails (e.g. fontkit Indic shaping bug with Nirmala.ttf),
+  // automatically retry with Helvetica so the PDF is still generated.
   const drawText = (text: string, x_mm: number, y_mm: number, size = 9, font = helveticaFont, align = "left") => {
     const x = x_mm * sf
     const y = (297 - y_mm) * sf
 
-    let drawX = x
-    if (align === "center") {
-      const textWidth = font.widthOfTextAtSize(text, size)
-      drawX = x - textWidth / 2
-    } else if (align === "right") {
-      const textWidth = font.widthOfTextAtSize(text, size)
-      drawX = x - textWidth
+    const attemptDraw = (f: typeof font) => {
+      let drawX = x
+      if (align === "center") {
+        const textWidth = f.widthOfTextAtSize(text, size)
+        drawX = x - textWidth / 2
+      } else if (align === "right") {
+        const textWidth = f.widthOfTextAtSize(text, size)
+        drawX = x - textWidth
+      }
+
+      page.drawText(text, {
+        x: drawX,
+        y: y,
+        size: size,
+        font: f,
+        color: rgb(0, 0, 0),
+      })
     }
 
-    page.drawText(text, {
-      x: drawX,
-      y: y,
-      size: size,
-      font: font,
-      color: rgb(0, 0, 0),
-    })
+    try {
+      attemptDraw(font)
+    } catch (e) {
+      // fontkit shaping failed (e.g. null syllable for complex script) — fall back to Helvetica
+      if (font !== helveticaFont) {
+        try {
+          attemptDraw(helveticaFont)
+        } catch (_) {
+          // silently skip if even the fallback fails
+        }
+      }
+    }
   }
 
   // 1. Header Metadata
