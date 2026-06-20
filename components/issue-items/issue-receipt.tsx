@@ -63,24 +63,49 @@ function unrollItems(items: Array<{
   return result
 }
 
+export type PaperSize = 'A4' | 'A5'
+
 /**
  * Common helper to overlay dynamic content on top of issue_note_template.pdf
+ * @param paperSize 'A4' (default, 210×297 mm) or 'A5' (148×210 mm)
  */
-export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uint8Array> {
+let cachedFontBytes: ArrayBuffer | null = null;
+let cachedTemplateA4Bytes: ArrayBuffer | null = null;
+let cachedTemplateA5Bytes: ArrayBuffer | null = null;
+
+export async function generateIssuePDFBytes(data: IssueReceiptData, paperSize: PaperSize = 'A4'): Promise<Uint8Array> {
   const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib")
   const fontkit = (await import("@pdf-lib/fontkit")).default
 
-  // Fetch pre-printed template and the local Sinhala font
-  const [templateRes, fontRes] = await Promise.all([
-    fetch("/issue_note_template.pdf"),
-    fetch("/Nirmala.ttf")
-  ])
+  // Pick the correct pre-printed template based on paper size
+  const templateFile = paperSize === 'A5' ? "/issue_note_a5_template.pdf" : "/issue_note_template.pdf"
 
-  if (!templateRes.ok) throw new Error("Failed to load PDF template (issue_note_template.pdf)")
-  if (!fontRes.ok) throw new Error("Failed to load Sinhala Unicode font (Nirmala.ttf)")
+  // Fetch font if not cached
+  if (!cachedFontBytes) {
+    const fontRes = await fetch("/Nirmala.ttf")
+    if (!fontRes.ok) throw new Error("Failed to load Sinhala Unicode font (Nirmala.ttf)")
+    cachedFontBytes = await fontRes.arrayBuffer()
+  }
 
-  const templateBytes = await templateRes.arrayBuffer()
-  const fontBytes = await fontRes.arrayBuffer()
+  // Fetch template if not cached
+  let templateBytes: ArrayBuffer;
+  if (paperSize === 'A5') {
+    if (!cachedTemplateA5Bytes) {
+      const templateRes = await fetch(templateFile)
+      if (!templateRes.ok) throw new Error(`Failed to load PDF template (${templateFile})`)
+      cachedTemplateA5Bytes = await templateRes.arrayBuffer()
+    }
+    templateBytes = cachedTemplateA5Bytes;
+  } else {
+    if (!cachedTemplateA4Bytes) {
+      const templateRes = await fetch(templateFile)
+      if (!templateRes.ok) throw new Error(`Failed to load PDF template (${templateFile})`)
+      cachedTemplateA4Bytes = await templateRes.arrayBuffer()
+    }
+    templateBytes = cachedTemplateA4Bytes;
+  }
+
+  const fontBytes = cachedFontBytes;
 
   const pdfDoc = await PDFDocument.load(templateBytes)
   pdfDoc.registerFontkit(fontkit)
@@ -91,13 +116,15 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
 
   const page = pdfDoc.getPages()[0]
   const sf = 2.83464567 // 72 pt / 25.4 mm
+  // Page height in mm depends on paper size (A4 = 297 mm, A5 = 210 mm)
+  const pageHeightMm = paperSize === 'A5' ? 210 : 297
 
   // Coordinate helper mapping mm from top-left to points from bottom-left
   // Safe drawText: if the requested font fails (e.g. fontkit Indic shaping bug with Nirmala.ttf),
   // automatically retry with Helvetica so the PDF is still generated.
   const drawText = (text: string, x_mm: number, y_mm: number, size = 9, font = helveticaFont, align = "left") => {
     const x = x_mm * sf
-    const y = (297 - y_mm) * sf
+    const y = (pageHeightMm - y_mm) * sf
 
     const attemptDraw = (f: typeof font) => {
       let drawX = x
@@ -136,14 +163,14 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
   const fullIssueNum = data.issue_number || `ISS-${data.id}`
 
   const issueDateObj = new Date(data.issue_date)
-  const currentDateObj = new Date(Date.now())
+  const currentDateObj = issueDateObj//new Date(Date.now())
   const issuedateStr = issueDateObj.toISOString().split("T")[0]
   const dateStr = currentDateObj.toISOString().split("T")[0]
   const timeStr = currentDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
 
-  drawText(fullIssueNum, 25, 30, 10, helveticaBold)
-  drawText(dateStr, 160, 59, 9, helveticaBold)
-  drawText(timeStr, 160, 69, 9, helveticaBold)
+  drawText(fullIssueNum, paperSize === 'A5' ? 10 : 25, paperSize === 'A5' ? 15 : 30, 10, helveticaBold)
+  drawText(dateStr, paperSize === 'A5' ? 105 : 160, paperSize === 'A5' ? 40 : 59, 9, helveticaBold)
+  drawText(timeStr, paperSize === 'A5' ? 105 : 160, paperSize === 'A5' ? 49 : 69, 9, helveticaBold)
 
   // 2. Customer Info
   const customerName = data.customer_name || ""
@@ -152,10 +179,10 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
   const customerNIC = data.customer_nic || ""
 
   // Use custom Nirmala font for names and addresses to support Sinhala overlay
-  drawText(customerName, 50, 78, 10, customFont)
-  drawText(issueAddress, 50, 83, 10, customFont)
-  drawText(customerPhone, 50, 88, 10, helveticaBold)
-  drawText(customerNIC, 144, 88, 10, helveticaBold)
+  drawText(customerName, paperSize === 'A5' ? 30 : 50, paperSize === 'A5' ? 55 : 78, paperSize === 'A5' ? 8 : 10, customFont)
+  drawText(issueAddress, paperSize === 'A5' ? 30 : 50, paperSize === 'A5' ? 59 : 83, paperSize === 'A5' ? 8 : 10, customFont)
+  drawText(customerPhone, paperSize === 'A5' ? 30 : 50, paperSize === 'A5' ? 63 : 88, paperSize === 'A5' ? 8 : 10, helveticaBold)
+  drawText(customerNIC, paperSize === 'A5' ? 115 : 144, paperSize === 'A5' ? 63 : 88, paperSize === 'A5' ? 8 : 10, helveticaBold)
 
   // 3. Table Rows (Up to 12 items fit on the pre-printed table template page)
   const startDate = new Date(data.issue_date)
@@ -166,10 +193,12 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
   const unrolled = unrollItems(data.items)
   const items = unrolled.slice(0, 12)
   items.forEach((item, idx) => {
-    const y_row = 108 + idx * 6
-
-    drawText(issuedateStr, 32, y_row, 8, helveticaFont, "center")
-    drawText(String(item.quantity), 52, y_row, 9, helveticaBold, "center")
+    const y_row = paperSize === 'A5' ? 82 + idx * 4 : 108 + idx * 6
+    {
+      paperSize === 'A4' &&
+        drawText(issuedateStr, 32, y_row, 8, helveticaFont, "center")
+    }
+    drawText(String(item.quantity), paperSize === 'A5' ? 12 : 52, y_row, 8, helveticaBold, "center")
 
     // Auto-detect Sinhala Unicode characters in item names to pick appropriate font
     const hasSinhala = /[\u0d80-\u0dff]/.test(item.name)
@@ -180,41 +209,41 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
     if (item.serial_codes && item.serial_codes.length > 0) {
       displayName += ` (${item.serial_codes.join(", ")})`
     }
-    drawText(displayName.slice(0, 48), 63, y_row, 8.5, nameFont)
+    drawText(displayName.slice(0, 48), paperSize === 'A5' ? 25 : 63, y_row, 8, nameFont)
 
     const priceNum = Number(item.price || 0)
-    drawText(priceNum.toFixed(2), 122, y_row, 9, helveticaFont, "right")
+    drawText(priceNum.toFixed(2), paperSize === 'A5' ? 80 : 122, y_row, 8, helveticaFont, "right")
     if (data.status === "Returned") {
-      drawText(String(numberOfDays), 137, y_row, 9, helveticaFont, "center")
+      drawText(String(numberOfDays), paperSize === 'A5' ? 90 : 137, y_row, 8, helveticaFont, "center")
     }
     if (data.status === "Returned") {
       const subtotal = priceNum * item.quantity * numberOfDays
-      drawText(subtotal.toFixed(2), 166, y_row, 9, helveticaBold, "right")
+      drawText(subtotal.toFixed(2), paperSize === 'A5' ? 118 : 166, y_row, 8, helveticaBold, "right")
     }
     if (data.status === "Returned") {
       const retDateStr = new Date(data.return_date).toISOString().split("T")[0]
-      drawText(retDateStr, 181.5, y_row, 8, helveticaFont, "center")
+      drawText(retDateStr, paperSize === 'A5' ? 132 : 181.5, y_row, 8, helveticaFont, "center")
     }
   })
 
   // 4. Totals Summary
   const grandTotal = Number(data.total_amount || 0)
   if (data.status === "Returned") {
-    drawText(grandTotal.toFixed(2), 165.5, 178, 10, helveticaBold, "right")
-    drawText("0.00", 165.5, 184, 10, helveticaFont, "right")
-    drawText((data.payment_status === "paid") ? "0.00" : grandTotal.toFixed(2), 165.5, 190, 10, helveticaBold, "right")
+    drawText(grandTotal.toFixed(2), paperSize === 'A5' ? 118 : 165.5, paperSize === 'A5' ? 129 : 178, 9, helveticaBold, "right")
+    drawText("0.00", paperSize === 'A5' ? 118 : 165.5, paperSize === 'A5' ? 133 : 184, 9, helveticaFont, "right")
+    drawText((data.payment_status === "paid") ? "0.00" : grandTotal.toFixed(2), paperSize === 'A5' ? 118 : 165.5, paperSize === 'A5' ? 137 : 190, 9, helveticaBold, "right")
   }
   // Checkboxes
   // Box 1: Items Taken ("භාණ්ඩ රැගෙන ආවා")
   if (data.status === "Returned") {
-    drawText("X", 73, 184, 12, helveticaBold, "center")
+    drawText("X", paperSize === 'A5' ? 50 : 73, paperSize === 'A5' ? 133.5 : 184, 12, helveticaBold, "center")
   }
 
   // Box 2: Paid Status ("මුදල් ගෙව්වා / Paid")
   if (data.payment_status === "paid") {
-    drawText("X", 73, 190, 12, helveticaBold, "center")
+    drawText("X", paperSize === 'A5' ? 50 : 73, paperSize === 'A5' ? 137 : 190, 12, helveticaBold, "center")
     if (data.payment_type) {
-      drawText(`(${data.payment_type})`, 82, 190, 9, helveticaBold)
+      drawText(`(${data.payment_type})`, paperSize === 'A5' ? 59 : 82, paperSize === 'A5' ? 138 : 190, 9, helveticaBold)
     }
   }
 
@@ -224,13 +253,13 @@ export async function generateIssuePDFBytes(data: IssueReceiptData): Promise<Uin
 /**
  * Triggers client-side browser file download of the filled PDF
  */
-export async function generateIssuePDF(data: IssueReceiptData) {
+export async function generateIssuePDF(data: IssueReceiptData, paperSize: PaperSize = 'A4') {
   try {
-    const pdfBytes = await generateIssuePDFBytes(data)
+    const pdfBytes = await generateIssuePDFBytes(data, paperSize)
     const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `issue-${data.issue_number}.pdf`
+    link.download = `issue-${data.issue_number}-${paperSize}.pdf`
     link.click()
     setTimeout(() => URL.revokeObjectURL(link.href), 100)
   } catch (error) {
@@ -241,18 +270,20 @@ export async function generateIssuePDF(data: IssueReceiptData) {
 
 /**
  * Generates and automatically triggers the native browser print dialog for the receipt PDF
+ * @param paperSize 'A4' (default) or 'A5'
  */
-export async function printIssuePDF(data: IssueReceiptData) {
+export async function printIssuePDF(data: IssueReceiptData, paperSize: PaperSize = 'A4') {
   try {
-    const pdfBytes = await generateIssuePDFBytes(data)
+    const pdfBytes = await generateIssuePDFBytes(data, paperSize)
     const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
     const blobUrl = URL.createObjectURL(blob)
 
-    // Locate or dynamically append the hidden print iframe
-    let iframe = document.getElementById("pdf-print-iframe") as HTMLIFrameElement
+    // Use a unique iframe id per paper size to avoid conflicts between simultaneous calls
+    const iframeId = `pdf-print-iframe-${paperSize.toLowerCase()}`
+    let iframe = document.getElementById(iframeId) as HTMLIFrameElement
     if (!iframe) {
       iframe = document.createElement("iframe")
-      iframe.id = "pdf-print-iframe"
+      iframe.id = iframeId
       iframe.style.display = "none"
       document.body.appendChild(iframe)
     }
@@ -284,23 +315,47 @@ export function IssueReceipt({ data, onBack }: IssueReceiptProps) {
 
   const unrolledItemsList = unrollItems(data.items)
 
-  async function handlePrint() {
-    await printIssuePDF(data)
+  async function handlePrint(paperSize: PaperSize) {
+    await printIssuePDF(data, paperSize)
   }
 
-  async function handleDownload() {
-    await generateIssuePDF(data)
+  async function handleDownload(paperSize: PaperSize) {
+    await generateIssuePDF(data, paperSize)
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button onClick={handlePrint} variant="outline" className="font-bold border-slate-200">
-          Print
-        </Button>
-        <Button onClick={handleDownload} variant="outline" className="font-bold border-slate-200">
-          Download PDF
-        </Button>
+      <div className="flex flex-wrap gap-2">
+        {/* Print size options */}
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+          <button
+            onClick={() => handlePrint('A4')}
+            className="px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white hover:bg-slate-700 transition-all flex items-center gap-1"
+          >
+            🖨️ Print A4
+          </button>
+          <button
+            onClick={() => handlePrint('A5')}
+            className="px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-600 text-white hover:bg-slate-500 transition-all flex items-center gap-1"
+          >
+            🖨️ Print A5
+          </button>
+        </div>
+        {/* Download size options */}
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+          <button
+            onClick={() => handleDownload('A4')}
+            className="px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            ⬇ A4 PDF
+          </button>
+          <button
+            onClick={() => handleDownload('A5')}
+            className="px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            ⬇ A5 PDF
+          </button>
+        </div>
         {onBack && (
           <Button onClick={onBack} variant="outline" className="font-bold border-slate-200">
             Back

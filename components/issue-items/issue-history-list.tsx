@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { ChevronDown, Search, CheckCircle, Clock, AlertCircle, FileText, Printer, Download, X } from 'lucide-react'
 
 import { getIssues, getIssueById, updateIssue, getCustomerById } from '@/lib/db'
-import { IssueReceipt, printIssuePDF, generateIssuePDF } from './issue-receipt'
+import { IssueReceipt, printIssuePDF, generateIssuePDF, type PaperSize } from './issue-receipt'
 import { CompleteReturnModal } from './complete-return-modal'
 
 interface IssueItem {
@@ -227,20 +227,20 @@ export function IssueHistoryList() {
     }
   }
 
-  async function handlePrint(issue: IssueItem) {
+  async function handlePrint(issue: IssueItem, paperSize: PaperSize = 'A4') {
     try {
       const data = await fetchReceiptData(issue)
-      await printIssuePDF(data)
+      await printIssuePDF(data, paperSize)
     } catch (error) {
       console.error("Failed to print receipt:", error)
       alert("Failed to load issue details for printing.")
     }
   }
 
-  async function handleDownload(issue: IssueItem) {
+  async function handleDownload(issue: IssueItem, paperSize: PaperSize = 'A4') {
     try {
       const data = await fetchReceiptData(issue)
-      await generateIssuePDF(data)
+      await generateIssuePDF(data, paperSize)
     } catch (error) {
       console.error("Failed to download receipt:", error)
       alert("Failed to load issue details for downloading.")
@@ -436,13 +436,24 @@ export function IssueHistoryList() {
                         {/* Actions Quick Access */}
                         <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1 justify-end">
-                            <button
-                              onClick={() => handlePrint(issue)}
-                              title="Print Receipt"
-                              className="p-1 rounded text-slate-400 hover:text-primary hover:bg-primary/5 transition-all"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                            </button>
+                            {/* A4 / A5 quick-print toggle */}
+                            <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded">
+                              <button
+                                onClick={() => handlePrint(issue, 'A4')}
+                                title="Print A4"
+                                className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase text-blue-600 hover:bg-blue-100 transition-all"
+                              >
+                                A4
+                              </button>
+                              <button
+                                onClick={() => handlePrint(issue, 'A5')}
+                                title="Print A5"
+                                className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase text-violet-600 hover:bg-violet-100 transition-all"
+                              >
+                                A5
+                              </button>
+                            </div>
+                            <Printer className="w-3 h-3 text-slate-300 select-none" />
                             {(issue.status === 'Pending' || issue.status === 'Overdue') && (
                               <button
                                 onClick={() => handleOpenReturnModal(issue)}
@@ -527,23 +538,43 @@ export function IssueHistoryList() {
                                 </div>
 
                                 <div className="flex items-center gap-1.5 w-full md:w-auto justify-end">
+                                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
                                   <Button
-                                    onClick={() => handlePrint(issue)}
+                                    onClick={() => handlePrint(issue, 'A4')}
                                     variant="outline"
-                                    className="flex-1 md:flex-none border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-[10px] uppercase tracking-wider h-8 rounded-lg"
+                                    className="flex-1 md:flex-none border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 font-bold text-[10px] uppercase tracking-wider h-8 rounded-lg"
                                   >
                                     <Printer className="w-3.5 h-3.5 mr-1" />
-                                    Print
+                                    Print A4
                                   </Button>
-
                                   <Button
-                                    onClick={() => handleDownload(issue)}
+                                    onClick={() => handlePrint(issue, 'A5')}
                                     variant="outline"
-                                    className="flex-1 md:flex-none border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-[10px] uppercase tracking-wider h-8 rounded-lg"
+                                    className="flex-1 md:flex-none border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 hover:text-violet-800 font-bold text-[10px] uppercase tracking-wider h-8 rounded-lg"
+                                  >
+                                    <Printer className="w-3.5 h-3.5 mr-1" />
+                                    Print A5
+                                  </Button>
+                                </div>
+
+                                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                                  <Button
+                                    onClick={() => handleDownload(issue, 'A4')}
+                                    variant="outline"
+                                    className="flex-1 md:flex-none border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 font-bold text-[10px] uppercase tracking-wider h-8 rounded-lg"
                                   >
                                     <Download className="w-3.5 h-3.5 mr-1" />
-                                    Download PDF
+                                    A4 PDF
                                   </Button>
+                                  <Button
+                                    onClick={() => handleDownload(issue, 'A5')}
+                                    variant="outline"
+                                    className="flex-1 md:flex-none border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 hover:text-violet-800 font-bold text-[10px] uppercase tracking-wider h-8 rounded-lg"
+                                  >
+                                    <Download className="w-3.5 h-3.5 mr-1" />
+                                    A5 PDF
+                                  </Button>
+                                </div>
 
                                   {issue.paymentStatus === 'unpaid' && (
                                     <Button

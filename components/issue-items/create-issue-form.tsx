@@ -9,7 +9,7 @@ import { IssueReceipt } from "./issue-receipt"
 import { SerialSelectionModal } from "./serial-selection-modal"
 import { ChevronDown, Search, Trash2 } from "lucide-react"
 import { getCustomers, getInventoryItems, createBooking, checkAvailability, createIssue, getCustomerById } from "@/lib/db"
-import { generateIssuePDF, printIssuePDF, type IssueReceiptData } from "./issue-receipt"
+import { generateIssuePDF, printIssuePDF, type IssueReceiptData, type PaperSize } from "./issue-receipt"
 
 interface Customer {
   id: string
@@ -257,7 +257,7 @@ export function CreateIssueForm() {
     setSelectedItems(selectedItems.map((si) => (si.id === itemId ? { ...si, serialNumbers } : si)))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent, paperSize: PaperSize = 'A4') {
     e.preventDefault()
 
     if (!selectedCustomerId || selectedItems.length === 0) {
@@ -336,7 +336,7 @@ export function CreateIssueForm() {
         }),
       }
 
-      await printIssuePDF(receiptData)
+      await printIssuePDF(receiptData, paperSize)
 
       alert("Issue processed successfully! Receipt print dialog has been triggered.")
 
@@ -750,13 +750,24 @@ export function CreateIssueForm() {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={!selectedCustomerId || selectedItems.length === 0}
-                  className="w-full sm:w-auto px-5 bg-primary hover:bg-primary/95 text-white rounded-lg shadow-md shadow-primary/10 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:grayscale disabled:shadow-none h-8.5"
-                >
-                  Confirm & Print Receipt
-                </Button>
+                <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg">
+                  <Button
+                    type="button"
+                    disabled={!selectedCustomerId || selectedItems.length === 0}
+                    onClick={(e) => handleSubmit(e as any, 'A4')}
+                    className="px-4 bg-primary hover:bg-primary/90 text-white rounded-md shadow-md shadow-primary/10 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:grayscale disabled:shadow-none h-8"
+                  >
+                    Confirm &amp; Print A4
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={!selectedCustomerId || selectedItems.length === 0}
+                    onClick={(e) => handleSubmit(e as any, 'A5')}
+                    className="px-4 bg-slate-600 hover:bg-slate-500 text-white rounded-md shadow-md shadow-slate-900/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:grayscale disabled:shadow-none h-8"
+                  >
+                    Confirm &amp; Print A5
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
