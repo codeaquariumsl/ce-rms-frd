@@ -127,7 +127,7 @@ export function Sidebar() {
             <span>Logout</span>
           </Button>
           <div className="text-xs text-muted-foreground">
-            <p className="font-semibold mb-1">System v1.0.6</p>
+            <p className="font-semibold mb-1">System v1.0.7</p>
             <p>Powered by Code Aqua</p>
           </div>
         </div>

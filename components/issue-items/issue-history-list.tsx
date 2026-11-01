@@ -44,15 +44,37 @@ export function IssueHistoryList() {
     loadIssues()
   }, [])
 
+  function parseSerialCodes(raw: any): string[] {
+    if (!raw) return []
+    if (Array.isArray(raw)) return raw.filter(Boolean).map(String)
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String)
+      } catch {
+        return raw.split(',').map((s) => s.trim()).filter(Boolean)
+      }
+    }
+    return []
+  }
+
   async function loadIssues() {
     try {
       setLoading(true)
       const data = await getIssues(1) // Organization ID 1
 
-      const mappedIssues = data.map((issue: any) => {
+      const mappedIssues: IssueItem[] = data.map((issue: any) => {
         const issueDate = new Date(issue.issue_date)
         const returnDate = new Date(issue.return_date)
         const days = Math.max(Math.ceil((returnDate.getTime() - issueDate.getTime()) / (1000 * 60 * 60 * 24)), 1)
+
+        const rawItems = Array.isArray(issue.items) ? issue.items : []
+        const mappedItems = rawItems.map((item: any) => ({
+          id: String(item.inventory_item_id ?? item.id),
+          name: item.name || '',
+          quantity: Number(item.quantity || 0),
+          serialNumbers: parseSerialCodes(item.serial_codes ?? item.serialNumbers),
+        }))
 
         const mappedItem: IssueItem = {
           id: String(issue.id),
@@ -62,7 +84,7 @@ export function IssueHistoryList() {
             name: issue.customer_name,
             phone: issue.customer_phone
           },
-          items: [],
+          items: mappedItems,
           issueDate: issue.issue_date,
           returnDate: issue.return_date,
           numberOfDays: days,
@@ -79,6 +101,31 @@ export function IssueHistoryList() {
 
       setIssues(mappedIssues)
       setLoading(false)
+
+      // Fallback: if the backend list endpoint did not include items/serials, load details in background so serial search works across all orders
+      const issuesMissingItems = data.filter((issue: any) => !Array.isArray(issue.items))
+      if (issuesMissingItems.length > 0) {
+        const detailsList = await Promise.all(
+          issuesMissingItems.map(async (issue: any) => {
+            try {
+              const details = await getIssueById(Number(issue.id))
+              const itemsWithMappedFields = (details?.items || []).map((item: any) => ({
+                id: String(item.inventory_item_id),
+                name: item.name,
+                quantity: item.quantity,
+                serialNumbers: parseSerialCodes(item.serial_codes),
+              }))
+              return { id: String(issue.id), items: itemsWithMappedFields }
+            } catch {
+              return { id: String(issue.id), items: [] }
+            }
+          })
+        )
+        const itemsMap = new Map(detailsList.map((d) => [d.id, d.items]))
+        setIssues((prev) =>
+          prev.map((i) => (itemsMap.has(i.id) && i.items.length === 0 ? { ...i, items: itemsMap.get(i.id)! } : i))
+        )
+      }
     } catch (error) {
       console.error('Failed to load issues:', error)
       setLoading(false)
@@ -102,7 +149,7 @@ export function IssueHistoryList() {
           id: String(item.inventory_item_id),
           name: item.name,
           quantity: item.quantity,
-          serialNumbers: item.serial_codes || []
+          serialNumbers: parseSerialCodes(item.serial_codes)
         }))
 
         setIssues(prev => prev.map(i =>
@@ -254,11 +301,16 @@ export function IssueHistoryList() {
       filtered = filtered.filter((issue) => issue.status === statusFilter)
     }
 
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase()
       filtered = filtered.filter((issue) =>
-        issue.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        issue.issueNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        issue.customer.phone?.includes(searchTerm)
+        issue.customer.name.toLowerCase().includes(q) ||
+        issue.issueNumber.toLowerCase().includes(q) ||
+        issue.customer.phone?.toLowerCase().includes(q) ||
+        issue.items.some((item) =>
+          item.name?.toLowerCase().includes(q) ||
+          item.serialNumbers?.some((sn) => sn.toLowerCase().includes(q))
+        )
       )
     }
 
@@ -302,7 +354,7 @@ export function IssueHistoryList() {
           <div className="relative flex-1 w-full group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input
-              placeholder="Filter by customer, issue ID, or phone..."
+              placeholder="Filter by customer, issue ID, phone, or serial number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 h-8.5 border-slate-200 bg-slate-50/50 focus:bg-white transition-all rounded-lg text-xs"
@@ -512,9 +564,21 @@ export function IssueHistoryList() {
                                               <span className="text-[8px] font-bold text-slate-400 uppercase">Quantity: {item.quantity}</span>
                                               {item.serialNumbers && item.serialNumbers.length > 0 && (
                                                 <div className="flex gap-1 flex-wrap">
-                                                  {item.serialNumbers.map((sn) => (
-                                                    <span key={sn} className="text-[8px] font-mono font-bold bg-slate-100 text-slate-500 px-1.5 py-0.2 rounded uppercase select-all">{sn}</span>
-                                                  ))}
+                                                  {item.serialNumbers.map((sn) => {
+                                                    const isMatched = Boolean(searchTerm.trim()) && sn.toLowerCase().includes(searchTerm.trim().toLowerCase())
+                                                    return (
+                                                      <span
+                                                        key={sn}
+                                                        className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded uppercase select-all ${
+                                                          isMatched
+                                                            ? 'bg-primary text-white ring-1 ring-primary/30'
+                                                            : 'bg-slate-100 text-slate-500'
+                                                        }`}
+                                                      >
+                                                        {sn}
+                                                      </span>
+                                                    )
+                                                  })}
                                                 </div>
                                               )}
                                             </div>
